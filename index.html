@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشغل فيديو فيسبوك</title>
+    <style>
+        :root {
+            --netflix-black: #141414;
+            --netflix-red: #e50914;
+            --netflix-white: #ffffff;
+            --netflix-gray: #b3b3b3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: var(--netflix-black);
+            color: var(--netflix-white);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            color: var(--netflix-red);
+            font-size: 28px;
+        }
+        
+        .admin-button {
+            background-color: var(--netflix-red);
+            color: var(--netflix-white);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .admin-button:hover {
+            background-color: #f40612;
+        }
+        
+        .player-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .video-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            margin-bottom: 20px;
+            background-color: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .video-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .admin-tools {
+            display: none;
+            width: 100%;
+            margin-top: 30px;
+        }
+        
+        .password-input-container {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        input {
+            background-color: #333;
+            border: 1px solid #444;
+            color: var(--netflix-white);
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-right: 10px;
+            width: 300px;
+        }
+        
+        input::placeholder {
+            color: var(--netflix-gray);
+        }
+        
+        .url-input-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        
+        .add-button {
+            background-color: var(--netflix-red);
+            color: var(--netflix-white);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .add-button:hover {
+            background-color: #f40612;
+        }
+        
+        .playlist {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .playlist-header {
+            display: grid;
+            grid-template-columns: 50px 1fr 80px;
+            padding: 10px;
+            background-color: #1f1f1f;
+            border-radius: 4px 4px 0 0;
+            font-weight: bold;
+        }
+        
+        .playlist-items {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .playlist-item {
+            display: grid;
+            grid-template-columns: 50px 1fr 80px;
+            padding: 12px 10px;
+            border-bottom: 1px solid #333;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+        
+        .playlist-item:hover {
+            background-color: #1f1f1f;
+            cursor: pointer;
+        }
+        
+        .playlist-item.active {
+            background-color: #2f2f2f;
+        }
+        
+        .delete-button {
+            background-color: var(--netflix-red);
+            color: var(--netflix-white);
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .delete-button:hover {
+            background-color: #f40612;
+        }
+        
+        .playlist-empty {
+            padding: 20px;
+            text-align: center;
+            color: var(--netflix-gray);
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .admin-button {
+                margin-top: 10px;
+            }
+            
+            .url-input-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .playlist-header, .playlist-item {
+                grid-template-columns: 40px 1fr 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>مشغل فيديو فيسبوك</h1>
+            <button id="adminButton" class="admin-button">إعدادات المسؤول</button>
+        </header>
+        
+        <div class="password-input-container" id="passwordInputContainer">
+            <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور">
+            <button class="add-button" id="submitPassword">تسجيل الدخول</button>
+        </div>
+        
+        <div class="player-container">
+            <div class="video-player" id="videoPlayer">
+                <div id="placeholderMessage" style="color: var(--netflix-gray);">لم يتم اختيار فيديو بعد</div>
+            </div>
+        </div>
+        
+        <div class="admin-tools" id="adminTools">
+            <div class="url-input-container">
+                <input type="text" id="videoUrlInput" placeholder="أدخل رابط فيديو الفيسبوك">
+                <button class="add-button" id="addVideoButton">إضافة</button>
+            </div>
+            
+            <div class="playlist" id="playlist">
+                <div class="playlist-header">
+                    <div>الرقم</div>
+                    <div>اسم الفيديو</div>
+                    <div>إجراءات</div>
+                </div>
+                <div class="playlist-items" id="playlistItems">
+                    <div class="playlist-empty">لا توجد فيديوهات في قائمة التشغيل</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // الحصول على العناصر من الصفحة
+            const adminButton = document.getElementById('adminButton');
+            const passwordInputContainer = document.getElementById('passwordInputContainer');
+            const passwordInput = document.getElementById('passwordInput');
+            const submitPassword = document.getElementById('submitPassword');
+            const adminTools = document.getElementById('adminTools');
+            const videoUrlInput = document.getElementById('videoUrlInput');
+            const addVideoButton = document.getElementById('addVideoButton');
+            const playlistItems = document.getElementById('playlistItems');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const placeholderMessage = document.getElementById('placeholderMessage');
+            
+            // كلمة المرور الصحيحة
+            const correctPassword = '&@$F20@we#20';
+            
+            // متغير لتخزين حالة دخول المسؤول
+            let isAdmin = false;
+            
+            // قائمة الفيديوهات
+            let videoPlaylist = [];
+            
+            // تحميل قائمة التشغيل من localStorage
+            function loadPlaylist() {
+                const savedPlaylist = localStorage.getItem('videoPlaylist');
+                if (savedPlaylist) {
+                    videoPlaylist = JSON.parse(savedPlaylist);
+                    updatePlaylistUI();
+                    
+                    // تشغيل الفيديو الأول تلقائيًا إذا كان موجودًا
+                    if (videoPlaylist.length > 0) {
+                        playVideo(videoPlaylist[0].url);
+                    }
+                }
+            }
+            
+            // حفظ قائمة التشغيل في localStorage
+            function savePlaylist() {
+                localStorage.setItem('videoPlaylist', JSON.stringify(videoPlaylist));
+            }
+            
+            // تحديث واجهة قائمة التشغيل
+            function updatePlaylistUI() {
+                // مسح المحتوى الحالي
+                playlistItems.innerHTML = '';
+                
+                if (videoPlaylist.length === 0) {
+                    playlistItems.innerHTML = '<div class="playlist-empty">لا توجد فيديوهات في قائمة التشغيل</div>';
+                    return;
+                }
+                
+                // إضافة الفيديوهات إلى القائمة
+                videoPlaylist.forEach((video, index) => {
+                    const playlistItem = document.createElement('div');
+                    playlistItem.className = 'playlist-item';
+                    playlistItem.innerHTML = `
+                        <div>${index + 1}</div>
+                        <div>${video.title}</div>
+                        <div>
+                            <button class="delete-button" data-index="${index}">حذف</button>
+                        </div>
+                    `;
+                    
+                    // إضافة حدث عند النقر لتشغيل الفيديو
+                    playlistItem.addEventListener('click', function(e) {
+                        if (!e.target.classList.contains('delete-button')) {
+                            playVideo(video.url);
+                            
+                            // إزالة الفئة النشطة من جميع العناصر
+                            document.querySelectorAll('.playlist-item').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            
+                            // إضافة الفئة النشطة للعنصر المحدد
+                            playlistItem.classList.add('active');
+                        }
+                    });
+                    
+                    playlistItems.appendChild(playlistItem);
+                });
+                
+                // إضافة حدث لأزرار الحذف
+                document.querySelectorAll('.delete-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        videoPlaylist.splice(index, 1);
+                        savePlaylist();
+                        updatePlaylistUI();
+                        
+                        // إذا كانت القائمة أصبحت فارغة، أظهر الرسالة
+                        if (videoPlaylist.length === 0) {
+                            placeholderMessage.style.display = 'block';
+                            videoPlayer.innerHTML = '<div id="placeholderMessage" style="color: var(--netflix-gray);">لم يتم اختيار فيديو بعد</div>';
+                        } else {
+                            // تشغيل الفيديو الأول إذا تم حذف الفيديو الحالي
+                            playVideo(videoPlaylist[0].url);
+                        }
+                    });
+                });
+            }
+            
+            // استخراج معرف الفيديو من رابط فيسبوك
+            function extractFacebookVideoId(url) {
+                // تحقق مما إذا كان الرابط صالحًا
+                if (!url.includes('facebook.com') && !url.includes('fb.watch')) {
+                    return null;
+                }
+                
+                // محاولة استخراج المعرف باستخدام معبّرات منتظمة مختلفة
+                let videoId = null;
+                
+                // للروابط القصيرة
+                if (url.includes('fb.watch')) {
+                    const matches = url.match(/fb\.watch\/([^\/\?]+)/);
+                    if (matches && matches[1]) {
+                        videoId = matches[1];
+                    }
+                }
+                
+                // للروابط الكاملة
+                if (!videoId) {
+                    const matches = url.match(/facebook\.com\/[^\/]+\/videos\/(\d+)/);
+                    if (matches && matches[1]) {
+                        videoId = matches[1];
+                    }
+                }
+                
+                // للروابط المشاركة
+                if (!videoId) {
+                    const matches = url.match(/facebook\.com\/watch\/\?v=(\d+)/);
+                    if (matches && matches[1]) {
+                        videoId = matches[1];
+                    }
+                }
+                
+                return videoId;
+            }
+            
+            // استخراج عنوان الفيديو من الرابط
+            function extractVideoTitle(url) {
+                // حاول استخراج العنوان من الرابط، أو استخدم جزء من الرابط
+                const parts = url.split('/');
+                const lastPart = parts[parts.length - 1].split('?')[0];
+                
+                // إذا كان الرابط يحتوي على عنوان
+                if (lastPart && lastPart.length > 5) {
+                    return lastPart.replace(/-/g, ' ').substring(0, 30) + '...';
+                }
+                
+                // إذا لم يتم العثور على عنوان، استخدم اسمًا افتراضيًا
+                return 'فيديو فيسبوك ' + (videoPlaylist.length + 1);
+            }
+            
+            // تشغيل الفيديو في المشغل
+            function playVideo(url) {
+                const videoId = extractFacebookVideoId(url);
+                
+                if (videoId) {
+                    // إخفاء رسالة الحامل
+                    placeholderMessage.style.display = 'none';
+                    
+                    // إنشاء iframe للفيديو
+                    videoPlayer.innerHTML = `
+                        <iframe src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&t=0" 
+                        scrolling="no" frameborder="0" allowfullscreen="true" 
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                        </iframe>
+                    `;
+                } else {
+                    alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
+                }
+            }
+            
+            // إضافة فيديو جديد
+            function addNewVideo() {
+                const url = videoUrlInput.value.trim();
+                
+                if (!url) {
+                    alert('يرجى إدخال رابط الفيديو');
+                    return;
+                }
+                
+                const videoId = extractFacebookVideoId(url);
+                
+                if (!videoId) {
+                    alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
+                    return;
+                }
+                
+                // إضافة الفيديو إلى القائمة
+                const videoTitle = extractVideoTitle(url);
+                videoPlaylist.push({
+                    url: url,
+                    title: videoTitle
+                });
+                
+                // حفظ القائمة وتحديث الواجهة
+                savePlaylist();
+                updatePlaylistUI();
+                
+                // تشغيل الفيديو المضاف
+                playVideo(url);
+                
+                // مسح حقل الإدخال
+                videoUrlInput.value = '';
+            }
+            
+            // حدث النقر على زر إعدادات المسؤول
+            adminButton.addEventListener('click', function() {
+                if (!isAdmin) {
+                    passwordInputContainer.style.display = 'block';
+                } else {
+                    // إذا كان المستخدم مسؤولًا بالفعل، قم بتسجيل الخروج
+                    isAdmin = false;
+                    adminTools.style.display = 'none';
+                    adminButton.textContent = 'إعدادات المسؤول';
+                }
+            });
+            
+            // حدث إرسال كلمة المرور
+            submitPassword.addEventListener('click', function() {
+                const password = passwordInput.value;
+                
+                if (password === correctPassword) {
+                    isAdmin = true;
+                    adminTools.style.display = 'block';
+                    passwordInputContainer.style.display = 'none';
+                    adminButton.textContent = 'تسجيل الخروج';
+                    passwordInput.value = '';
+                } else {
+                    alert('كلمة المرور غير صحيحة');
+                }
+            });
+            
+            // حدث إدخال كلمة المرور باستخدام Enter
+            passwordInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    submitPassword.click();
+                }
+            });
+            
+            // حدث النقر على زر إضافة فيديو
+            addVideoButton.addEventListener('click', addNewVideo);
+            
+            // حدث إدخال رابط الفيديو باستخدام Enter
+            videoUrlInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    addVideoButton.click();
+                }
+            });
+            
+            // تحميل قائمة التشغيل عند تحميل الصفحة
+            loadPlaylist();
+        });
+    </script>
+</body>
+</html>
