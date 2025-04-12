@@ -188,6 +188,12 @@
             text-align: center;
             color: var(--netflix-gray);
         }
+
+        #placeholderMessage {
+            color: var(--netflix-gray);
+            padding: 20px;
+            text-align: center;
+        }
         
         @media (max-width: 768px) {
             .container {
@@ -234,7 +240,7 @@
         
         <div class="player-container">
             <div class="video-player" id="videoPlayer">
-                <div id="placeholderMessage" style="color: var(--netflix-gray);">لم يتم اختيار فيديو بعد</div>
+                <div id="placeholderMessage">لم يتم اختيار فيديو بعد</div>
             </div>
         </div>
         
@@ -349,8 +355,7 @@
                         
                         // إذا كانت القائمة أصبحت فارغة، أظهر الرسالة
                         if (videoPlaylist.length === 0) {
-                            placeholderMessage.style.display = 'block';
-                            videoPlayer.innerHTML = '<div id="placeholderMessage" style="color: var(--netflix-gray);">لم يتم اختيار فيديو بعد</div>';
+                            videoPlayer.innerHTML = '<div id="placeholderMessage">لم يتم اختيار فيديو بعد</div>';
                         } else {
                             // تشغيل الفيديو الأول إذا تم حذف الفيديو الحالي
                             playVideo(videoPlaylist[0].url);
@@ -359,52 +364,58 @@
                 });
             }
             
-            // استخراج معرف الفيديو من رابط فيسبوك
-            function extractFacebookVideoId(url) {
-                // تحقق مما إذا كان الرابط صالحًا
+            // معالجة رابط فيسبوك بطرق مختلفة للتأكد من صحته
+            function processURL(url) {
+                if (!url) return null;
+                
+                // تنظيف الرابط من أي بارامترات إضافية
+                url = url.trim();
+                
+                // التحقق من أن الرابط هو من فيسبوك
                 if (!url.includes('facebook.com') && !url.includes('fb.watch')) {
                     return null;
                 }
                 
-                // محاولة استخراج المعرف باستخدام معبّرات منتظمة مختلفة
-                let videoId = null;
+                // إذا كان الرابط من نوع watch
+                if (url.includes('/watch')) {
+                    return url;
+                }
                 
-                // للروابط القصيرة
+                // إذا كان الرابط من نوع videos
+                if (url.includes('/videos/')) {
+                    return url;
+                }
+                
+                // إذا كان الرابط من نوع fb.watch
                 if (url.includes('fb.watch')) {
-                    const matches = url.match(/fb\.watch\/([^\/\?]+)/);
-                    if (matches && matches[1]) {
-                        videoId = matches[1];
-                    }
+                    return url;
                 }
                 
-                // للروابط الكاملة
-                if (!videoId) {
-                    const matches = url.match(/facebook\.com\/[^\/]+\/videos\/(\d+)/);
-                    if (matches && matches[1]) {
-                        videoId = matches[1];
-                    }
-                }
-                
-                // للروابط المشاركة
-                if (!videoId) {
-                    const matches = url.match(/facebook\.com\/watch\/\?v=(\d+)/);
-                    if (matches && matches[1]) {
-                        videoId = matches[1];
-                    }
-                }
-                
-                return videoId;
+                // للروابط الأخرى
+                return url;
             }
             
             // استخراج عنوان الفيديو من الرابط
             function extractVideoTitle(url) {
-                // حاول استخراج العنوان من الرابط، أو استخدم جزء من الرابط
-                const parts = url.split('/');
-                const lastPart = parts[parts.length - 1].split('?')[0];
-                
-                // إذا كان الرابط يحتوي على عنوان
-                if (lastPart && lastPart.length > 5) {
-                    return lastPart.replace(/-/g, ' ').substring(0, 30) + '...';
+                // محاولة استخراج اسم الفيديو من الرابط
+                try {
+                    // بداية جرب استخراج العنوان من المعلمات
+                    const urlObj = new URL(url);
+                    if (urlObj.searchParams.has('title')) {
+                        return urlObj.searchParams.get('title');
+                    }
+                    
+                    // محاولة الحصول على الاسم من المسار
+                    const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
+                    if (pathParts.length > 0) {
+                        const lastPart = pathParts[pathParts.length - 1];
+                        // إذا كان الجزء الأخير ليس رقمًا فقط، استخدمه كعنوان
+                        if (isNaN(lastPart) && lastPart.length > 3) {
+                            return lastPart.replace(/-/g, ' ').substring(0, 30) + '...';
+                        }
+                    }
+                } catch (e) {
+                    console.error("خطأ في استخراج عنوان الفيديو:", e);
                 }
                 
                 // إذا لم يتم العثور على عنوان، استخدم اسمًا افتراضيًا
@@ -413,21 +424,31 @@
             
             // تشغيل الفيديو في المشغل
             function playVideo(url) {
-                const videoId = extractFacebookVideoId(url);
-                
-                if (videoId) {
-                    // إخفاء رسالة الحامل
-                    placeholderMessage.style.display = 'none';
+                try {
+                    // معالجة الرابط
+                    const processedURL = processURL(url);
                     
-                    // إنشاء iframe للفيديو
+                    if (!processedURL) {
+                        alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
+                        return;
+                    }
+                    
+                    // تحديث المشغل
                     videoPlayer.innerHTML = `
-                        <iframe src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false&t=0" 
-                        scrolling="no" frameborder="0" allowfullscreen="true" 
-                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
-                        </iframe>
+                        <iframe 
+                            src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(processedURL)}&show_text=false&width=auto&t=0" 
+                            width="100%" 
+                            height="100%" 
+                            style="border:none;overflow:hidden" 
+                            scrolling="no" 
+                            frameborder="0" 
+                            allowfullscreen="true" 
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        ></iframe>
                     `;
-                } else {
-                    alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
+                } catch (error) {
+                    console.error("خطأ في تشغيل الفيديو:", error);
+                    alert('حدث خطأ أثناء تشغيل الفيديو. يرجى المحاولة مرة أخرى.');
                 }
             }
             
@@ -440,9 +461,9 @@
                     return;
                 }
                 
-                const videoId = extractFacebookVideoId(url);
+                const processedURL = processURL(url);
                 
-                if (!videoId) {
+                if (!processedURL) {
                     alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
                     return;
                 }
@@ -450,7 +471,7 @@
                 // إضافة الفيديو إلى القائمة
                 const videoTitle = extractVideoTitle(url);
                 videoPlaylist.push({
-                    url: url,
+                    url: processedURL,
                     title: videoTitle
                 });
                 
@@ -459,10 +480,19 @@
                 updatePlaylistUI();
                 
                 // تشغيل الفيديو المضاف
-                playVideo(url);
+                playVideo(processedURL);
                 
                 // مسح حقل الإدخال
                 videoUrlInput.value = '';
+            }
+            
+            // معالجة للروابط غير السليمة
+            function normalizeURL(url) {
+                // التحقق من أن الرابط يبدأ بـ http:// أو https://
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    return 'https://' + url;
+                }
+                return url;
             }
             
             // حدث النقر على زر إعدادات المسؤول
@@ -506,6 +536,13 @@
             videoUrlInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
                     addVideoButton.click();
+                }
+            });
+            
+            // تحسين معالجة الرابط عند إضافته
+            videoUrlInput.addEventListener('blur', function() {
+                if (this.value) {
+                    this.value = normalizeURL(this.value);
                 }
             });
             
