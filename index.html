@@ -1,554 +1,1084 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مشغل فيديو فيسبوك</title>
+    <title>رواية مصورة تفاعلية</title>
     <style>
         :root {
-            --netflix-black: #141414;
-            --netflix-red: #e50914;
-            --netflix-white: #ffffff;
-            --netflix-gray: #b3b3b3;
+            --primary-color: #f47521;
+            --dark-bg: #23252b;
+            --darker-bg: #191b1f;
+            --light-text: #ffffff;
+            --gray-text: #9fadbd;
         }
-        
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Cairo', 'Tajawal', sans-serif;
         }
-        
+
         body {
-            background-color: var(--netflix-black);
-            color: var(--netflix-white);
-            padding: 20px;
-            min-height: 100vh;
+            background-color: var(--darker-bg);
+            color: var(--light-text);
+            overflow-x: hidden;
+            direction: rtl;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        
+
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            color: var(--netflix-red);
-            font-size: 28px;
-        }
-        
-        .admin-button {
-            background-color: var(--netflix-red);
-            color: var(--netflix-white);
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.3s;
-        }
-        
-        .admin-button:hover {
-            background-color: #f40612;
-        }
-        
-        .player-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .video-player {
-            width: 100%;
-            aspect-ratio: 16/9;
-            margin-bottom: 20px;
-            background-color: #0a0a0a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .video-player iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        .admin-tools {
-            display: none;
-            width: 100%;
-            margin-top: 30px;
-        }
-        
-        .password-input-container {
-            display: none;
-            margin-top: 20px;
             text-align: center;
-        }
-        
-        input {
-            background-color: #333;
-            border: 1px solid #444;
-            color: var(--netflix-white);
-            padding: 10px 15px;
-            border-radius: 4px;
-            margin-right: 10px;
-            width: 300px;
-        }
-        
-        input::placeholder {
-            color: var(--netflix-gray);
-        }
-        
-        .url-input-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            width: 100%;
-        }
-        
-        .add-button {
-            background-color: var(--netflix-red);
-            color: var(--netflix-white);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
-        }
-        
-        .add-button:hover {
-            background-color: #f40612;
-        }
-        
-        .playlist {
-            width: 100%;
-            margin-top: 20px;
-        }
-        
-        .playlist-header {
-            display: grid;
-            grid-template-columns: 50px 1fr 80px;
-            padding: 10px;
-            background-color: #1f1f1f;
-            border-radius: 4px 4px 0 0;
-            font-weight: bold;
-        }
-        
-        .playlist-items {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .playlist-item {
-            display: grid;
-            grid-template-columns: 50px 1fr 80px;
-            padding: 12px 10px;
-            border-bottom: 1px solid #333;
-            align-items: center;
-            transition: background-color 0.2s;
-        }
-        
-        .playlist-item:hover {
-            background-color: #1f1f1f;
-            cursor: pointer;
-        }
-        
-        .playlist-item.active {
-            background-color: #2f2f2f;
-        }
-        
-        .delete-button {
-            background-color: var(--netflix-red);
-            color: var(--netflix-white);
-            border: none;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        .delete-button:hover {
-            background-color: #f40612;
-        }
-        
-        .playlist-empty {
-            padding: 20px;
-            text-align: center;
-            color: var(--netflix-gray);
+            padding: 20px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 30px;
         }
 
-        #placeholderMessage {
-            color: var(--netflix-gray);
-            padding: 20px;
-            text-align: center;
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 28px;
         }
-        
+
+        .subtitle {
+            color: var(--gray-text);
+            font-size: 16px;
+        }
+
+        .manga-reader {
+            position: relative;
+            overflow: hidden;
+            background-color: var(--dark-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            height: calc(100vh - 300px);
+            min-height: 400px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .manga-image {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+
+        .manga-image.active {
+            display: block;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .nav-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-button:hover {
+            background-color: #d6611a;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(244, 117, 33, 0.3);
+        }
+
+        .nav-button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .chapter-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--gray-text);
+        }
+
+        .arc-title {
+            color: var(--primary-color);
+            margin-left: 5px;
+        }
+
+        .rating-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--dark-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-top: 30px;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 10px;
+            font-size: 40px;
+            margin: 20px 0;
+        }
+
+        .star {
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .star:hover, .star.active {
+            color: gold;
+            transform: scale(1.2);
+        }
+
+        .comment-section {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .comment-textarea {
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: var(--light-text);
+            padding: 15px;
+            font-size: 16px;
+            min-height: 120px;
+            margin-bottom: 20px;
+            resize: vertical;
+        }
+
+        .frame-selection {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .frames-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .frame-option {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .frame-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .free-frame {
+            border: 2px solid #3a7bd5;
+        }
+
+        .paid-frame {
+            border: 2px solid #f7b733;
+        }
+
+        .paid-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .frame-preview {
+            height: 120px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+
+        .simple-frame {
+            background-color: #3a7bd5;
+            color: white;
+        }
+
+        .classic-frame {
+            background: linear-gradient(135deg, #c33764 0%, #1d2671 100%);
+            color: white;
+        }
+
+        .gold-frame {
+            background: linear-gradient(45deg, #BF953F, #FCF6BA, #B38728, #FBF5B7, #AA771C);
+            color: #333;
+            animation: goldShine 3s infinite;
+        }
+
+        .silver-frame {
+            background: linear-gradient(45deg, #8e9eab, #eef2f3, #8e9eab);
+            color: #333;
+        }
+
+        .glow-frame {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .smoke-frame {
+            background-color: #222;
+            color: white;
+            position: relative;
+        }
+
+        .smoke-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0,0,0,0.3), transparent);
+            filter: blur(5px);
+            animation: smokeMove 10s infinite alternate;
+        }
+
+        @keyframes goldShine {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.5); }
+            50% { box-shadow: 0 0 25px 10px rgba(46, 204, 113, 0.7); }
+            100% { box-shadow: 0 0 15px 5px rgba(46, 204, 113, 0.5); }
+        }
+
+        @keyframes smokeMove {
+            0% { filter: blur(5px); opacity: 0.7; }
+            100% { filter: blur(7px); opacity: 0.9; }
+        }
+
+        .frame-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .frame-description {
+            font-size: 14px;
+            color: var(--gray-text);
+        }
+
+        .payment-section {
+            display: none;
+            background-color: var(--dark-bg);
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .payment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            color: var(--gray-text);
+        }
+
+        .form-input {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--light-text);
+        }
+
+        .comments-container {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .comments-section {
+            margin-top: 20px;
+        }
+
+        .comment-card {
+            background-color: var(--dark-bg);
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .comment-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .comment-author {
+            font-weight: bold;
+        }
+
+        .comment-rating {
+            color: gold;
+        }
+
+        .comment-body {
+            padding: 20px;
+            position: relative;
+        }
+
+        .comment-text {
+            position: relative;
+            z-index: 2;
+        }
+
+        .comment-frame {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            background-color: #d6611a;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(244, 117, 33, 0.3);
+        }
+
+        /* Responsive styles */
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .manga-reader {
+                height: calc(100vh - 250px);
             }
-            
-            header {
-                flex-direction: column;
-                align-items: flex-start;
+
+            .frames-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             }
-            
-            .admin-button {
-                margin-top: 10px;
+
+            .nav-button {
+                padding: 10px 15px;
+                font-size: 14px;
             }
-            
-            .url-input-container {
-                flex-direction: column;
-                align-items: flex-start;
+
+            .rating-stars {
+                font-size: 30px;
             }
-            
-            input {
-                width: 100%;
-                margin-right: 0;
-                margin-bottom: 10px;
+        }
+
+        @media (max-width: 480px) {
+            .manga-reader {
+                height: calc(100vh - 200px);
             }
-            
-            .playlist-header, .playlist-item {
-                grid-template-columns: 40px 1fr 60px;
+
+            .frames-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
             }
+
+            .frame-preview {
+                height: 80px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .nav-button {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
+        /* Touch gestures area */
+        .touch-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        /* Loading spinner */
+        .loader {
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>مشغل فيديو فيسبوك</h1>
-            <button id="adminButton" class="admin-button">إعدادات المسؤول</button>
+            <h1>رواية مصورة تفاعلية</h1>
+            <p class="subtitle">اكتشف وقيّم روايتنا المصورة - تجربة قراءة ممتعة</p>
         </header>
-        
-        <div class="password-input-container" id="passwordInputContainer">
-            <input type="password" id="passwordInput" placeholder="أدخل كلمة المرور">
-            <button class="add-button" id="submitPassword">تسجيل الدخول</button>
+
+        <div class="chapter-info">
+            <span class="arc-title" id="current-arc">الأرك الأول:</span>
+            <span id="current-chapter">الفصل الأول</span>
         </div>
-        
-        <div class="player-container">
-            <div class="video-player" id="videoPlayer">
-                <div id="placeholderMessage">لم يتم اختيار فيديو بعد</div>
+
+        <div class="manga-reader">
+            <div class="touch-area" id="touch-area"></div>
+            <div class="loader" id="loader"></div>
+            <!-- الصور سيتم إضافتها هنا بواسطة JavaScript -->
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-button" id="prev-btn" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                السابق
+            </button>
+            <button class="nav-button" id="next-btn">
+                التالي
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="rating-container" id="rating-container">
+            <h2>كيف كانت تجربتك مع الرواية؟</h2>
+            <div class="rating-stars" id="rating-stars">
+                <span class="star" data-rating="1">★</span>
+                <span class="star" data-rating="2">★</span>
+                <span class="star" data-rating="3">★</span>
+                <span class="star" data-rating="4">★</span>
+                <span class="star" data-rating="5">★</span>
+            </div>
+            <div class="comment-section">
+                <h3>أخبرنا برأيك عن الرواية</h3>
+                <textarea class="comment-textarea" id="comment-textarea" placeholder="اكتب تعليقك هنا..."></textarea>
+                <button class="submit-btn" id="submit-comment">إرسال التعليق</button>
             </div>
         </div>
-        
-        <div class="admin-tools" id="adminTools">
-            <div class="url-input-container">
-                <input type="text" id="videoUrlInput" placeholder="أدخل رابط فيديو الفيسبوك">
-                <button class="add-button" id="addVideoButton">إضافة</button>
+
+        <div class="frame-selection" id="frame-selection">
+            <h2>اختر إطاراً مميزاً لتعليقك</h2>
+            <div class="frames-grid">
+                <div class="frame-option free-frame" data-frame="simple">
+                    <div class="frame-preview simple-frame">إطار بسيط</div>
+                    <div class="frame-title">الإطار البسيط</div>
+                    <div class="frame-description">إطار أنيق بتصميم بسيط</div>
+                </div>
+                <div class="frame-option free-frame" data-frame="classic">
+                    <div class="frame-preview classic-frame">إطار كلاسيكي</div>
+                    <div class="frame-title">الإطار الكلاسيكي</div>
+                    <div class="frame-description">إطار بتصميم كلاسيكي متألق</div>
+                </div>
+                <div class="frame-option paid-frame" data-frame="gold" data-price="5">
+                    <div class="paid-badge">مدفوع</div>
+                    <div class="frame-preview gold-frame">إطار ذهبي</div>
+                    <div class="frame-title">الإطار الذهبي اللامع</div>
+                    <div class="frame-description">توهج ذهبي متدرج وحواف ناعمة</div>
+                </div>
+                <div class="frame-option paid-frame" data-frame="silver" data-price="3">
+                    <div class="paid-badge">مدفوع</div>
+                    <div class="frame-preview silver-frame">إطار فضي</div>
+                    <div class="frame-title">الإطار الفضي النقي</div>
+                    <div class="frame-description">لمعان معدني أنيق وفاخر</div>
+                </div>
+                <div class="frame-option paid-frame" data-frame="glow" data-price="4">
+                    <div class="paid-badge">مدفوع</div>
+                    <div class="frame-preview glow-frame">إطار متوهج</div>
+                    <div class="frame-title">إطار اللمعان النبضي</div>
+                    <div class="frame-description">توهج خفيف متغير مع حركة نابضة</div>
+                </div>
+                <div class="frame-option paid-frame" data-frame="smoke" data-price="7">
+                    <div class="paid-badge">مدفوع</div>
+                    <div class="frame-preview smoke-frame">إطار دخاني</div>
+                    <div class="frame-title">الإطار الدخاني الأسود</div>
+                    <div class="frame-description">دخان أسود متحرك بلطف حول الحواف</div>
+                </div>
             </div>
-            
-            <div class="playlist" id="playlist">
-                <div class="playlist-header">
-                    <div>الرقم</div>
-                    <div>اسم الفيديو</div>
-                    <div>إجراءات</div>
+            <button class="submit-btn" id="select-frame-btn">اختيار الإطار</button>
+        </div>
+
+        <div class="payment-section" id="payment-section">
+            <h2>إتمام عملية الشراء</h2>
+            <p>أنت على وشك شراء <span id="frame-name">الإطار</span> بسعر <span id="frame-price">0</span> دولار</p>
+            <div class="payment-form">
+                <div class="form-group">
+                    <label for="card-number">رقم البطاقة</label>
+                    <input type="text" id="card-number" class="form-input" placeholder="**** **** **** ****" maxlength="19">
                 </div>
-                <div class="playlist-items" id="playlistItems">
-                    <div class="playlist-empty">لا توجد فيديوهات في قائمة التشغيل</div>
+                <div class="form-group">
+                    <label for="card-name">الاسم على البطاقة</label>
+                    <input type="text" id="card-name" class="form-input" placeholder="الاسم كما يظهر على البطاقة">
                 </div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="expiry">تاريخ الانتهاء</label>
+                        <input type="text" id="expiry" class="form-input" placeholder="MM/YY" maxlength="5">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label for="cvv">رمز الأمان</label>
+                        <input type="text" id="cvv" class="form-input" placeholder="CVV" maxlength="3">
+                    </div>
+                </div>
+                <button class="submit-btn" id="pay-button">إتمام الدفع</button>
+                <button class="submit-btn" id="cancel-payment" style="background-color: #555;">إلغاء</button>
+            </div>
+        </div>
+
+        <div class="comments-container" id="comments-container">
+            <h2>تعليقات القراء</h2>
+            <div class="comments-section" id="comments-section">
+                <!-- التعليقات ستضاف هنا بواسطة JavaScript -->
             </div>
         </div>
     </div>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // الحصول على العناصر من الصفحة
-            const adminButton = document.getElementById('adminButton');
-            const passwordInputContainer = document.getElementById('passwordInputContainer');
-            const passwordInput = document.getElementById('passwordInput');
-            const submitPassword = document.getElementById('submitPassword');
-            const adminTools = document.getElementById('adminTools');
-            const videoUrlInput = document.getElementById('videoUrlInput');
-            const addVideoButton = document.getElementById('addVideoButton');
-            const playlistItems = document.getElementById('playlistItems');
-            const videoPlayer = document.getElementById('videoPlayer');
-            const placeholderMessage = document.getElementById('placeholderMessage');
-            
-            // كلمة المرور الصحيحة
-            const correctPassword = '&@$F20@we#20';
-            
-            // متغير لتخزين حالة دخول المسؤول
-            let isAdmin = false;
-            
-            // قائمة الفيديوهات
-            let videoPlaylist = [];
-            
-            // تحميل قائمة التشغيل من localStorage
-            function loadPlaylist() {
-                const savedPlaylist = localStorage.getItem('videoPlaylist');
-                if (savedPlaylist) {
-                    videoPlaylist = JSON.parse(savedPlaylist);
-                    updatePlaylistUI();
-                    
-                    // تشغيل الفيديو الأول تلقائيًا إذا كان موجودًا
-                    if (videoPlaylist.length > 0) {
-                        playVideo(videoPlaylist[0].url);
-                    }
-                }
-            }
-            
-            // حفظ قائمة التشغيل في localStorage
-            function savePlaylist() {
-                localStorage.setItem('videoPlaylist', JSON.stringify(videoPlaylist));
-            }
-            
-            // تحديث واجهة قائمة التشغيل
-            function updatePlaylistUI() {
-                // مسح المحتوى الحالي
-                playlistItems.innerHTML = '';
-                
-                if (videoPlaylist.length === 0) {
-                    playlistItems.innerHTML = '<div class="playlist-empty">لا توجد فيديوهات في قائمة التشغيل</div>';
-                    return;
-                }
-                
-                // إضافة الفيديوهات إلى القائمة
-                videoPlaylist.forEach((video, index) => {
-                    const playlistItem = document.createElement('div');
-                    playlistItem.className = 'playlist-item';
-                    playlistItem.innerHTML = `
-                        <div>${index + 1}</div>
-                        <div>${video.title}</div>
-                        <div>
-                            <button class="delete-button" data-index="${index}">حذف</button>
-                        </div>
-                    `;
-                    
-                    // إضافة حدث عند النقر لتشغيل الفيديو
-                    playlistItem.addEventListener('click', function(e) {
-                        if (!e.target.classList.contains('delete-button')) {
-                            playVideo(video.url);
-                            
-                            // إزالة الفئة النشطة من جميع العناصر
-                            document.querySelectorAll('.playlist-item').forEach(item => {
-                                item.classList.remove('active');
-                            });
-                            
-                            // إضافة الفئة النشطة للعنصر المحدد
-                            playlistItem.classList.add('active');
+        // بيانات الرواية المصورة
+        const mangaData = {
+            arcs: [
+                {
+                    name: "الأرك الأول",
+                    chapters: [
+                        {
+                            name: "الفصل الأول",
+                            images: [
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+1",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+2",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+3",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+4",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+5"
+                            ]
+                        },
+                        {
+                            name: "الفصل الثاني",
+                            images: [
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+1+الفصل+2",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+2+الفصل+2",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+3+الفصل+2",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=صفحة+4+الفصل+2"
+                            ]
                         }
-                    });
+                    ]
+                },
+                {
+                    name: "الأرك الثاني",
+                    chapters: [
+                        {
+                            name: "الفصل الأول",
+                            images: [
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=أرك+2+صفحة+1",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=أرك+2+صفحة+2",
+                                "https://via.placeholder.com/800x1200/23252b/ffffff?text=أرك+2+صفحة+3"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // العناصر المستخدمة في الصفحة
+        const mangaReader = document.querySelector('.manga-reader');
+        const loader = document.getElementById('loader');
+        const progressBar = document.getElementById('progress-bar');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const touchArea = document.getElementById('touch-area');
+        const currentArcElement = document.getElementById('current-arc');
+        const currentChapterElement = document.getElementById('current-chapter');
+        const ratingContainer = document.getElementById('rating-container');
+        const ratingStars = document.getElementById('rating-stars');
+        const stars = document.querySelectorAll('.star');
+        const commentTextarea = document.getElementById('comment-textarea');
+        const submitCommentBtn = document.getElementById('submit-comment');
+        const frameSelection = document.getElementById('frame-selection');
+        const frameOptions = document.querySelectorAll('.frame-option');
+        const selectFrameBtn = document.getElementById('select-frame-btn');
+        const paymentSection = document.getElementById('payment-section');
+        const frameName = document.getElementById('frame-name');
+        const framePrice = document.getElementById('frame-price');
+        const payButton = document.getElementById('pay-button');
+        const cancelPaymentBtn = document.getElementById('cancel-payment');
+        const commentsContainer = document.getElementById('comments-container');
+        const commentsSection = document.getElementById('comments-section');
+
+        // متغيرات تتبع حالة القراءة
+        let currentArcIndex = 0;
+        let currentChapterIndex = 0;
+        let currentImageIndex = 0;
+        let totalImages = 0;
+        let loadedImages = [];
+        let currentRating = 0;
+        let userComment = '';
+        let selectedFrame = null;
+        let isFramePaid = false;
+        let framePrice = 0;
+
+        // تهيئة الرواية المصورة
+        function initManga() {
+            loadCurrentChapter();
+            updateNavigationButtons();
+            setupTouchEvents();
+        }
+
+        // تحميل الفصل الحالي
+        function loadCurrentChapter() {
+            // تحديث عنوان الأرك والفصل
+            const currentArc = mangaData.arcs[currentArcIndex];
+            const currentChapter = currentArc.chapters[currentChapterIndex];
+            
+            currentArcElement.textContent = `${currentArc.name}:`;
+            currentChapterElement.textContent = currentChapter.name;
+            
+            // حساب إجمالي الصور
+            totalImages = currentChapter.images.length;
+            
+            // إزالة الصور السابقة
+            const oldImages = document.querySelectorAll('.manga-image');
+            oldImages.forEach(img => img.remove());
+            
+            // إضافة صور الفصل الحالي
+            loadedImages = [];
+            loader.style.display = 'block';
+            
+            const loadAllImages = async () => {
+                for (let i = 0; i < totalImages; i++) {
+                    const img = document.createElement('img');
+                    img.className = 'manga-image';
+                    img.src = currentChapter.images[i];
+                    img.alt = `صفحة ${i + 1}`;
                     
-                    playlistItems.appendChild(playlistItem);
-                });
-                
-                // إضافة حدث لأزرار الحذف
-                document.querySelectorAll('.delete-button').forEach(button => {
-                    button.addEventListener('click', function() {
-                        const index = parseInt(this.getAttribute('data-index'));
-                        videoPlaylist.splice(index, 1);
-                        savePlaylist();
-                        updatePlaylistUI();
-                        
-                        // إذا كانت القائمة أصبحت فارغة، أظهر الرسالة
-                        if (videoPlaylist.length === 0) {
-                            videoPlayer.innerHTML = '<div id="placeholderMessage">لم يتم اختيار فيديو بعد</div>';
+                    // إضافة الصورة للقارئ
+                    mangaReader.appendChild(img);
+                    loadedImages.push(img);
+                    
+                    // الانتظار للتأكد من تحميل الصورة
+                    await new Promise(resolve => {
+                        if (img.complete) {
+                            resolve();
                         } else {
-                            // تشغيل الفيديو الأول إذا تم حذف الفيديو الحالي
-                            playVideo(videoPlaylist[0].url);
+                            img.onload = resolve;
                         }
                     });
-                });
+                }
+                
+                // عرض الصورة الأولى
+                if (loadedImages.length > 0) {
+                    loadedImages[0].classList.add('active');
+                    loader.style.display = 'none';
+                }
+                
+                updateProgressBar();
+            };
+            
+            loadAllImages();
+        }
+
+        // تحديث شريط التقدم
+        function updateProgressBar() {
+            const progress = ((currentImageIndex + 1) / totalImages) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        // تحديث أزرار التنقل
+        function updateNavigationButtons() {
+            // زر السابق
+            if (currentImageIndex === 0 && currentChapterIndex === 0 && currentArcIndex === 0) {
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.disabled = false;
             }
             
-            // معالجة رابط فيسبوك بطرق مختلفة للتأكد من صحته
-            function processURL(url) {
-                if (!url) return null;
-                
-                // تنظيف الرابط من أي بارامترات إضافية
-                url = url.trim();
-                
-                // التحقق من أن الرابط هو من فيسبوك
-                if (!url.includes('facebook.com') && !url.includes('fb.watch')) {
-                    return null;
-                }
-                
-                // إذا كان الرابط من نوع watch
-                if (url.includes('/watch')) {
-                    return url;
-                }
-                
-                // إذا كان الرابط من نوع videos
-                if (url.includes('/videos/')) {
-                    return url;
-                }
-                
-                // إذا كان الرابط من نوع fb.watch
-                if (url.includes('fb.watch')) {
-                    return url;
-                }
-                
-                // للروابط الأخرى
-                return url;
-            }
+            // زر التالي
+            const isLastImage = currentImageIndex === totalImages - 1;
+            const isLastChapter = currentChapterIndex === mangaData.arcs[currentArcIndex].chapters.length - 1;
+            const isLastArc = currentArcIndex === mangaData.arcs.length - 1;
             
-            // استخراج عنوان الفيديو من الرابط
-            function extractVideoTitle(url) {
-                // محاولة استخراج اسم الفيديو من الرابط
-                try {
-                    // بداية جرب استخراج العنوان من المعلمات
-                    const urlObj = new URL(url);
-                    if (urlObj.searchParams.has('title')) {
-                        return urlObj.searchParams.get('title');
-                    }
-                    
-                    // محاولة الحصول على الاسم من المسار
-                    const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
-                    if (pathParts.length > 0) {
-                        const lastPart = pathParts[pathParts.length - 1];
-                        // إذا كان الجزء الأخير ليس رقمًا فقط، استخدمه كعنوان
-                        if (isNaN(lastPart) && lastPart.length > 3) {
-                            return lastPart.replace(/-/g, ' ').substring(0, 30) + '...';
-                        }
-                    }
-                } catch (e) {
-                    console.error("خطأ في استخراج عنوان الفيديو:", e);
-                }
-                
-                // إذا لم يتم العثور على عنوان، استخدم اسمًا افتراضيًا
-                return 'فيديو فيسبوك ' + (videoPlaylist.length + 1);
+            if (isLastImage && isLastChapter && isLastArc) {
+                nextBtn.innerHTML = 'إنهاء القراءة <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+            } else {
+                nextBtn.innerHTML = 'التالي <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
             }
-            
-            // تشغيل الفيديو في المشغل
-            function playVideo(url) {
-                try {
-                    // معالجة الرابط
-                    const processedURL = processURL(url);
-                    
-                    if (!processedURL) {
-                        alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
-                        return;
-                    }
-                    
-                    // تحديث المشغل
-                    videoPlayer.innerHTML = `
-                        <iframe 
-                            src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(processedURL)}&show_text=false&width=auto&t=0" 
-                            width="100%" 
-                            height="100%" 
-                            style="border:none;overflow:hidden" 
-                            scrolling="no" 
-                            frameborder="0" 
-                            allowfullscreen="true" 
-                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                        ></iframe>
-                    `;
-                } catch (error) {
-                    console.error("خطأ في تشغيل الفيديو:", error);
-                    alert('حدث خطأ أثناء تشغيل الفيديو. يرجى المحاولة مرة أخرى.');
-                }
-            }
-            
-            // إضافة فيديو جديد
-            function addNewVideo() {
-                const url = videoUrlInput.value.trim();
-                
-                if (!url) {
-                    alert('يرجى إدخال رابط الفيديو');
-                    return;
-                }
-                
-                const processedURL = processURL(url);
-                
-                if (!processedURL) {
-                    alert('رابط الفيديو غير صالح. يرجى التأكد من إدخال رابط فيديو فيسبوك صحيح.');
-                    return;
-                }
-                
-                // إضافة الفيديو إلى القائمة
-                const videoTitle = extractVideoTitle(url);
-                videoPlaylist.push({
-                    url: processedURL,
-                    title: videoTitle
-                });
-                
-                // حفظ القائمة وتحديث الواجهة
-                savePlaylist();
-                updatePlaylistUI();
-                
-                // تشغيل الفيديو المضاف
-                playVideo(processedURL);
-                
-                // مسح حقل الإدخال
-                videoUrlInput.value = '';
-            }
-            
-            // معالجة للروابط غير السليمة
-            function normalizeURL(url) {
-                // التحقق من أن الرابط يبدأ بـ http:// أو https://
-                if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                    return 'https://' + url;
-                }
-                return url;
-            }
-            
-            // حدث النقر على زر إعدادات المسؤول
-            adminButton.addEventListener('click', function() {
-                if (!isAdmin) {
-                    passwordInputContainer.style.display = 'block';
+        }
+
+        // الانتقال للصورة التالية
+        function goToNextImage() {
+            if (currentImageIndex < totalImages - 1) {
+                // الانتقال للصورة التالية في نفس الفصل
+                loadedImages[currentImageIndex].classList.remove('active');
+                currentImageIndex++;
+                loadedImages[currentImageIndex].classList.add('active');
+                updateProgressBar();
+                updateNavigationButtons();
+            } else {
+                // التحقق إذا كان هناك فصل تالي
+                if (currentChapterIndex < mangaData.arcs[currentArcIndex].chapters.length - 1) {
+                    // الانتقال للفصل التالي
+                    currentChapterIndex++;
+                    currentImageIndex = 0;
+                    loadCurrentChapter();
+                } else if (currentArcIndex < mangaData.arcs.length - 1) {
+                    // الانتقال للأرك التالي
+                    currentArcIndex++;
+                    currentChapterIndex = 0;
+                    currentImageIndex = 0;
+                    loadCurrentChapter();
                 } else {
-                    // إذا كان المستخدم مسؤولًا بالفعل، قم بتسجيل الخروج
-                    isAdmin = false;
-                    adminTools.style.display = 'none';
-                    adminButton.textContent = 'إعدادات المسؤول';
+                    // انتهت الرواية، عرض قسم التقييم
+                    showRatingSection();
                 }
+            }
+        }
+
+        // الانتقال للصورة السابقة
+        function goToPrevImage() {
+            if (currentImageIndex > 0) {
+                // الانتقال للصورة السابقة في نفس الفصل
+                loadedImages[currentImageIndex].classList.remove('active');
+                currentImageIndex--;
+                loadedImages[currentImageIndex].classList.add('active');
+                updateProgressBar();
+                updateNavigationButtons();
+            } else {
+                // التحقق إذا كان هناك فصل سابق
+                if (currentChapterIndex > 0) {
+                    // الانتقال للفصل السابق
+                    currentChapterIndex--;
+                    currentImageIndex = mangaData.arcs[currentArcIndex].chapters[currentChapterIndex].images.length - 1;
+                    loadCurrentChapter();
+                    
+                    // تعيين الصورة الأخيرة في الفصل السابق
+                    setTimeout(() => {
+                        loadedImages.forEach(img => img.classList.remove('active'));
+                        loadedImages[currentImageIndex].classList.add('active');
+                        updateProgressBar();
+                        updateNavigationButtons();
+                    }, 500);
+                } else if (currentArcIndex > 0) {
+                    // الانتقال للأرك السابق
+                    currentArcIndex--;
+                    currentChapterIndex = mangaData.arcs[currentArcIndex].chapters.length - 1;
+                    currentImageIndex = mangaData.arcs[currentArcIndex].chapters[currentChapterIndex].images.length - 1;
+                    loadCurrentChapter();
+                    
+                    // تعيين الصورة الأخيرة في الفصل السابق
+                    setTimeout(() => {
+                        loadedImages.forEach(img => img.classList.remove('active'));
+                        loadedImages[currentImageIndex].classList.add('active');
+                        updateProgressBar();
+                        updateNavigationButtons();
+                    }, 500);
+                }
+            }
+        }
+
+        // إعداد أحداث اللمس للأجهزة اللمسية
+        function setupTouchEvents() {
+            let startX = 0;
+            let endX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
             });
             
-            // حدث إرسال كلمة المرور
-            submitPassword.addEventListener('click', function() {
-                const password = passwordInput.value;
+            touchArea.addEventListener('touchend', (e) => {
+                endX = e.changedTouches[0].clientX;
+                handleSwipe();
+            });
+            
+            function handleSwipe() {
+                const threshold = 50; // عتبة المسافة للسحب
                 
-                if (password === correctPassword) {
-                    isAdmin = true;
-                    adminTools.style.display = 'block';
-                    passwordInputContainer.style.display = 'none';
-                    adminButton.textContent = 'تسجيل الخروج';
-                    passwordInput.value = '';
+                // التحقق من اتجاه السحب
+                if (startX - endX > threshold) {
+                    // سحب لليسار (التالي)
+                    goToNextImage();
+                } else if (endX - startX > threshold) {
+                    // سحب لليمين (السابق)
+                    goToPrevImage();
+                }
+            }
+        }
+
+        // عرض قسم التقييم
+        function showRatingSection() {
+            mangaReader.style.display = 'none';
+            document.querySelector('.navigation').style.display = 'none';
+            document.querySelector('.progress-container').style.display = 'none';
+            document.querySelector('.chapter-info').style.display = 'none';
+            
+            ratingContainer.style.display = 'flex';
+        }
+
+        // حفظ التقييم
+        function saveRating(rating) {
+            currentRating = rating;
+            
+            // تحديث النجوم النشطة
+            stars.forEach(star => {
+                const starRating = parseInt(star.getAttribute('data-rating'));
+                if (starRating <= rating) {
+                    star.classList.add('active');
                 } else {
-                    alert('كلمة المرور غير صحيحة');
+                    star.classList.remove('active');
                 }
             });
+        }
+
+        // إرسال التعليق والانتقال لاختيار الإطار
+        function submitComment() {
+            userComment = commentTextarea.value.trim();
             
-            // حدث إدخال كلمة المرور باستخدام Enter
-            passwordInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    submitPassword.click();
-                }
+            if (userComment) {
+                ratingContainer.style.display = 'none';
+                frameSelection.style.display = 'block';
+            } else {
+                alert('الرجاء كتابة تعليق قبل المتابعة');
+            }
+        }
+
+        // اختيار إطار للتعليق
+        function selectFrame(frame) {
+            selectedFrame = frame.getAttribute('data-frame');
+            isFramePaid = frame.classList.contains('paid-frame');
+            
+            // إزالة التحديد من جميع الإطارات
+            frameOptions.forEach(option => {
+                option.style.border = option.classList.contains('free-frame') ? 
+                    '2px solid #3a7bd5' : '2px solid #f7b733';
             });
             
-            // حدث النقر على زر إضافة فيديو
-            addVideoButton.addEventListener('click', addNewVideo);
+            // تحديد الإطار المختار
+            frame.style.border = '2px solid #2ecc71';
             
-            // حدث إدخال رابط الفيديو باستخدام Enter
-            videoUrlInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') {
-                    addVideoButton.click();
-                }
+            // تحديث زر الاختيار
+            if (isFramePaid) {
+                framePrice = parseInt(frame.getAttribute('data-price'));
+                selectFrameBtn.textContent = `اختيار ودفع ${framePrice} دولار`;
+            } else {
+                selectFrameBtn.textContent = 'اختيار الإطار';
+            }
+        }
+
+        // تأكيد اختيار الإطار
+        function confirmFrameSelection() {
+            if (!selectedFrame) {
+                alert('الرجاء اختيار إطار للتعليق');
+                return;
+            }
+            
+            if (isFramePaid) {
+                // عرض صفحة الدفع
+                frameSelection.style.display = 'none';
+                paymentSection.style.display = 'block';
+                
+                // تحديث معلومات الإطار
+                const frameElement = document.querySelector(`.frame-option[data-frame="${selectedFrame}"]`);
+                const frameTitle = frameElement.querySelector('.frame-title').textContent;
+                
+                frameName.textContent = frameTitle;
+                framePrice.textContent = framePrice;
+            } else {
+                // إذا كان الإطار مجاني، احفظ التعليق مباشرة
+                saveComment();
+            }
+        }
+
+        // إتمام عملية الدفع
+        function processPayment() {
+            // هنا يتم التعامل مع واجهة برمجة الدفع في الحالة الحقيقية
+            // لكن هنا سنقوم بمحاكاة عملية الدفع
+            
+            const cardNumber = document.getElementById('card-number').value;
+            const cardName = document.getElementById('card-name').value;
+            const expiry = document.getElementById('expiry').value;
+            const cvv = document.getElementById('cvv').value;
+            
+            if (!cardNumber || !cardName || !expiry || !cvv) {
+                alert('الرجاء إدخال جميع بيانات البطاقة');
+                return;
+            }
+            
+            // محاكاة التحميل
+            payButton.textContent = 'جاري التحميل...';
+            payButton.disabled = true;
+            
+            setTimeout(() => {
+                payButton.textContent = 'تم الدفع بنجاح';
+                
+                // بعد نجاح عملية الدفع، نحفظ التعليق
+                setTimeout(() => {
+                    paymentSection.style.display = 'none';
+                    saveComment();
+                }, 1500);
+            }, 2000);
+        }
+
+        // حفظ التعليق وعرض التعليقات
+        function saveComment() {
+            // إنشاء بطاقة التعليق
+            const commentCard = document.createElement('div');
+            commentCard.className = 'comment-card';
+            
+            const commentHeader = document.createElement('div');
+            commentHeader.className = 'comment-header';
+            
+            const commentAuthor = document.createElement('div');
+            commentAuthor.className = 'comment-author';
+            commentAuthor.textContent = 'قارئ';
+            
+            const commentRating = document.createElement('div');
+            commentRating.className = 'comment-rating';
+            commentRating.textContent = '★'.repeat(currentRating);
+            
+            commentHeader.appendChild(commentAuthor);
+            commentHeader.appendChild(commentRating);
+            
+            const commentBody = document.createElement('div');
+            commentBody.className = 'comment-body';
+            
+            // إضافة إطار زخرفي حسب الاختيار
+            const commentFrame = document.createElement('div');
+            commentFrame.className = `comment-frame ${selectedFrame}-frame`;
+            
+            const commentText = document.createElement('div');
+            commentText.className = 'comment-text';
+            commentText.textContent = userComment;
+            
+            commentBody.appendChild(commentFrame);
+            commentBody.appendChild(commentText);
+            
+            commentCard.appendChild(commentHeader);
+            commentCard.appendChild(commentBody);
+            
+            // إضافة التعليق إلى قسم التعليقات
+            commentsSection.prepend(commentCard);
+            
+            // عرض قسم التعليقات
+            commentsContainer.style.display = 'block';
+            
+            // في التطبيق الحقيقي، يتم إرسال البيانات إلى الخادم هنا
+        }
+
+        // تسجيل أحداث النقر
+        nextBtn.addEventListener('click', goToNextImage);
+        prevBtn.addEventListener('click', goToPrevImage);
+        
+        // أحداث النجوم للتقييم
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const rating = parseInt(star.getAttribute('data-rating'));
+                saveRating(rating);
             });
-            
-            // تحسين معالجة الرابط عند إضافته
-            videoUrlInput.addEventListener('blur', function() {
-                if (this.value) {
-                    this.value = normalizeURL(this.value);
-                }
-            });
-            
-            // تحميل قائمة التشغيل عند تحميل الصفحة
-            loadPlaylist();
         });
+        
+        // أحداث إرسال التعليق
+        submitCommentBtn.addEventListener('click', submitComment);
+        
+        // أحداث خيارات الإطارات
+        frameOptions.forEach(frame => {
+            frame.addEventListener('click', () => {
+                selectFrame(frame);
+            });
+        });
+        
+        // أحداث زر اختيار الإطار
+        selectFrameBtn.addEventListener('click', confirmFrameSelection);
+        
+        // أحداث زر الدفع
+        payButton.addEventListener('click', processPayment);
+        
+        // أحداث زر إلغاء الدفع
+        cancelPaymentBtn.addEventListener('click', () => {
+            paymentSection.style.display = 'none';
+            frameSelection.style.display = 'block';
+        });
+        
+        // تهيئة الرواية المصورة عند تحميل الصفحة
+        window.addEventListener('load', initManga);
     </script>
 </body>
 </html>
