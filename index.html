@@ -3,25 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة الأدب العربي - اقرأ واكتب ونشر</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>مكتبة الروايات العربية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@300;400;600;700&display=swap');
-        
-        :root {
-            --primary-color: #2C5530;
-            --secondary-color: #8B4513;
-            --accent-color: #DAA520;
-            --background-color: #FDF5E6;
-            --text-color: #2C2C2C;
-            --light-bg: #F9F7F4;
-            --border-color: #E0D5C7;
-            --shadow: 0 4px 6px rgba(0,0,0,0.1);
-            --reading-bg: #FFFEF7;
-            --night-bg: #1A1A1A;
-            --night-text: #E8E8E8;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -30,15 +14,10 @@
 
         body {
             font-family: 'Cairo', sans-serif;
-            background: var(--background-color);
-            color: var(--text-color);
+            background: linear-gradient(135deg, #191b1f 0%, #23252b 100%);
+            color: #ffffff;
             line-height: 1.6;
-            transition: all 0.3s ease;
-        }
-
-        body.night-mode {
-            background: var(--night-bg);
-            color: var(--night-text);
+            min-height: 100vh;
         }
 
         .container {
@@ -47,1439 +26,1223 @@
             padding: 0 20px;
         }
 
-        /* Header & Navigation */
+        /* Header */
         .header {
-            background: white;
-            box-shadow: var(--shadow);
+            background: rgba(35, 37, 43, 0.95);
+            backdrop-filter: blur(10px);
             position: fixed;
             top: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             z-index: 1000;
+            border-bottom: 2px solid #f47521;
         }
 
         .nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 0;
+            padding: 1rem 2rem;
         }
 
         .logo {
-            font-family: 'Amiri', serif;
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            color: var(--primary-color);
+            color: #f47521;
             text-decoration: none;
         }
 
-        .nav-menu {
+        .nav-links {
             display: flex;
-            list-style: none;
             gap: 2rem;
+            list-style: none;
         }
 
-        .nav-link {
+        .nav-links a {
+            color: #9fadbd;
             text-decoration: none;
-            color: var(--text-color);
             font-weight: 500;
             transition: color 0.3s;
-            cursor: pointer;
         }
 
-        .nav-link:hover, .nav-link.active {
-            color: var(--primary-color);
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #f47521;
         }
 
-        .nav-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .btn {
-            padding: 0.7rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-            text-align: center;
-        }
-
-        .btn-primary {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #1e3b21;
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--primary-color);
-            border: 2px solid var(--primary-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        /* Main Content Area */
-        .main-content {
-            margin-top: 80px;
-            min-height: calc(100vh - 80px);
-        }
-
-        .page {
+        .menu-toggle {
             display: none;
-            padding: 2rem 0;
-        }
-
-        .page.active {
-            display: block;
-        }
-
-        /* Home Page */
-        .hero {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 4rem 0;
-            text-align: center;
-        }
-
-        .hero h1 {
-            font-family: 'Amiri', serif;
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            padding: 4rem 0;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-        }
-
-        /* Library Page */
-        .library-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .search-bar {
-            display: flex;
-            gap: 1rem;
-            flex: 1;
-            max-width: 600px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 0.8rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .filter-select {
-            padding: 0.8rem;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            background: white;
-        }
-
-        .books-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-
-        .book-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: transform 0.3s;
-            cursor: pointer;
-        }
-
-        .book-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .book-cover {
-            height: 200px;
-            background: linear-gradient(45deg, var(--primary-color), var(--accent-color));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .book-info {
-            padding: 1.5rem;
-        }
-
-        .book-title {
-            font-family: 'Amiri', serif;
-            font-size: 1.3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: var(--primary-color);
-        }
-
-        .book-author {
-            color: var(--secondary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .book-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .rating {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-
-        /* Reader Page */
-        .reader-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: var(--reading-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .reader-header {
-            background: white;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .reader-controls {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .reader-content {
-            padding: 3rem;
-            font-family: 'Amiri', serif;
-            font-size: 1.2rem;
-            line-height: 2;
-            color: var(--text-color);
-        }
-
-        .chapter-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            margin-bottom: 2rem;
-            text-align: center;
-        }
-
-        .chapter-text {
-            text-align: justify;
-            margin-bottom: 2rem;
-        }
-
-        .chapter-nav {
-            display: flex;
-            justify-content: space-between;
-            padding: 2rem;
-            background: var(--light-bg);
-        }
-
-        /* Writer Page */
-        .writer-interface {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            gap: 2rem;
-            height: calc(100vh - 120px);
-        }
-
-        .writer-sidebar {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow);
-        }
-
-        .chapters-list {
-            list-style: none;
-        }
-
-        .chapter-item {
-            padding: 0.8rem;
-            margin-bottom: 0.5rem;
-            background: var(--light-bg);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .chapter-item:hover, .chapter-item.active {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .editor-container {
-            background: white;
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .editor-toolbar {
-            background: var(--light-bg);
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .editor {
-            height: calc(100% - 80px);
-            padding: 2rem;
-            border: none;
-            outline: none;
-            font-family: 'Amiri', serif;
-            font-size: 1.1rem;
-            line-height: 1.8;
-            resize: none;
-            width: 100%;
-        }
-
-        /* Profile Page */
-        .profile-container {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 2rem;
-        }
-
-        .profile-sidebar {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: var(--shadow);
-            height: fit-content;
-        }
-
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: var(--primary-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 2rem;
-            margin: 0 auto 1rem;
-        }
-
-        .profile-info h2 {
-            text-align: center;
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .profile-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 1rem;
-            background: var(--light-bg);
-            border-radius: 8px;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .profile-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            box-shadow: var(--shadow);
-        }
-
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .tab {
-            padding: 1rem 2rem;
             background: none;
             border: none;
-            cursor: pointer;
-            font-weight: 600;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
-        }
-
-        /* Settings Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
+            color: #f47521;
             font-size: 1.5rem;
             cursor: pointer;
         }
 
-        .settings-group {
-            margin-bottom: 2rem;
+        /* Main Content */
+        .main {
+            margin-top: 80px;
+            padding: 2rem 0;
         }
 
-        .settings-group h3 {
+        .hero {
+            text-align: center;
+            padding: 3rem 0;
+            background: linear-gradient(rgba(244, 117, 33, 0.1), rgba(244, 117, 33, 0.05));
+            border-radius: 15px;
+            margin-bottom: 3rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
             margin-bottom: 1rem;
-            color: var(--primary-color);
+            color: #f47521;
         }
 
-        .setting-item {
+        .hero p {
+            font-size: 1.2rem;
+            color: #9fadbd;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .custom-select {
+            position: relative;
+            min-width: 150px;
+        }
+
+        .select-button {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #23252b;
+            border: 2px solid #f47521;
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 0;
-            border-bottom: 1px solid var(--border-color);
+            transition: all 0.3s;
         }
 
-        .toggle {
-            position: relative;
-            width: 50px;
-            height: 25px;
-            background: #ccc;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: background 0.3s;
+        .select-button:hover {
+            background: #2a2d34;
+            transform: translateY(-2px);
         }
 
-        .toggle.active {
-            background: var(--primary-color);
-        }
-
-        .toggle::after {
-            content: '';
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            width: 21px;
-            height: 21px;
-            background: white;
-            border-radius: 50%;
+        .select-arrow {
             transition: transform 0.3s;
         }
 
-        .toggle.active::after {
-            transform: translateX(-25px);
+        .select-button.open .select-arrow {
+            transform: rotate(180deg);
         }
 
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none;
-            }
-            
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .library-header {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .search-bar {
-                max-width: none;
-            }
-            
-            .books-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-            
-            .writer-interface {
-                grid-template-columns: 1fr;
-                height: auto;
-            }
-            
-            .writer-sidebar {
-                order: 2;
-            }
-            
-            .profile-container {
-                grid-template-columns: 1fr;
-            }
-            
-            .reader-content {
-                padding: 2rem 1rem;
-            }
+        .select-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #23252b;
+            border: 2px solid #f47521;
+            border-radius: 8px;
+            margin-top: 5px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s;
+            z-index: 100;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .select-options.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
         }
 
-        .fade-in {
-            animation: fadeIn 0.6s ease-out;
+        .select-option {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #191b1f;
         }
 
-        /* Night Mode Adjustments */
-        .night-mode .header,
-        .night-mode .feature-card,
-        .night-mode .book-card,
-        .night-mode .reader-container,
-        .night-mode .writer-sidebar,
-        .night-mode .editor-container,
-        .night-mode .profile-sidebar,
-        .night-mode .profile-content,
-        .night-mode .modal-content {
-            background: #2A2A2A;
-            color: var(--night-text);
+        .select-option:last-child {
+            border-bottom: none;
         }
 
-        .night-mode .search-input,
-        .night-mode .filter-select,
-        .night-mode .editor {
-            background: #333;
-            color: var(--night-text);
-            border-color: #444;
+        .select-option:hover {
+            background: #f47521;
         }
 
-        .night-mode .reader-content {
-            background: #1F1F1F;
-            color: #E8E8E8;
+        .search-box {
+            flex: 1;
+            max-width: 300px;
+            position: relative;
         }
 
-        /* Loading Animation */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #23252b;
+            border: 2px solid #f47521;
+            border-radius: 8px;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .search-input::placeholder {
+            color: #9fadbd;
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(244, 117, 33, 0.3);
+        }
+
+        /* Novels Grid */
+        .novels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .novel-card {
+            background: linear-gradient(145deg, #23252b, #191b1f);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .novel-card:hover {
+            transform: translateY(-5px);
+            border-color: #f47521;
+            box-shadow: 0 10px 30px rgba(244, 117, 33, 0.3);
+        }
+
+        .novel-cover {
+            width: 100%;
             height: 200px;
+            background: linear-gradient(45deg, #f47521, #ff6b35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .novel-cover::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2) 0%, transparent 50%);
+        }
+
+        .novel-info {
+            padding: 1.5rem;
+        }
+
+        .novel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .novel-author {
+            color: #9fadbd;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .novel-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #f47521;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #9fadbd;
+        }
+
+        .novel-description {
+            color: #9fadbd;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .novel-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #f47521;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #e66a1c;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #9fadbd;
+            border: 1px solid #9fadbd;
+        }
+
+        .btn-secondary:hover {
+            background: #9fadbd;
+            color: #191b1f;
+        }
+
+        .btn-save {
+            background: transparent;
+            color: #f47521;
+            border: 1px solid #f47521;
+            min-width: 40px;
+            padding: 0.5rem;
+        }
+
+        .btn-save:hover,
+        .btn-save.saved {
+            background: #f47521;
+            color: #ffffff;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+            padding: 1rem;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: linear-gradient(145deg, #23252b, #191b1f);
+            border-radius: 15px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #f47521;
+            transform: scale(0.8);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #3a3d47;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f47521;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #9fadbd;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #f47521;
+        }
+
+        .modal-content {
+            padding: 1.5rem;
+        }
+
+        .modal-novel-info {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .modal-cover {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #f47521, #ff6b35);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .modal-details h3 {
+            color: #f47521;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-details p {
+            color: #9fadbd;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .rating-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(244, 117, 33, 0.1);
+            border-radius: 10px;
+        }
+
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .star {
+            font-size: 1.2rem;
+            color: #3a3d47;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .star.active,
+        .star:hover {
+            color: #f47521;
+        }
+
+        .rating-input {
+            margin-top: 1rem;
+        }
+
+        .rating-input h4 {
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #9fadbd;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid var(--border-color);
-            border-top: 4px solid var(--primary-color);
+            border: 3px solid #3a3d47;
+            border-top: 3px solid #f47521;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
         }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: #23252b;
+                flex-direction: column;
+                padding: 1rem;
+                border-top: 1px solid #3a3d47;
+            }
+
+            .nav-links.show {
+                display: flex;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .search-box {
+                max-width: none;
+            }
+
+            .novels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+
+            .modal-novel-info {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .modal-cover {
+                height: 150px;
+                max-width: 150px;
+                margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 10px;
+            }
+
+            .nav {
+                padding: 1rem;
+            }
+
+            .novels-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .novel-actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
-        <nav class="nav container">
-            <a href="#" class="logo">منصة الأدب</a>
-            <ul class="nav-menu">
-                <li><a href="#" class="nav-link active" data-page="home">الرئيسية</a></li>
-                <li><a href="#" class="nav-link" data-page="library">المكتبة</a></li>
-                <li><a href="#" class="nav-link" data-page="writer">اكتب</a></li>
-                <li><a href="#" class="nav-link" data-page="profile">الملف الشخصي</a></li>
+        <nav class="nav">
+            <a href="#" class="logo">مكتبة الروايات</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#" class="active">الرئيسية</a></li>
+                <li><a href="#" onclick="showSavedNovels()">المحفوظات</a></li>
+                <li><a href="#">الأكثر قراءة</a></li>
+                <li><a href="#">الأحدث</a></li>
             </ul>
-            <div class="nav-actions">
-                <button class="btn btn-secondary" id="settingsBtn">
-                    <i class="fas fa-cog"></i>
-                </button>
-                <button class="btn btn-primary" id="loginBtn">دخول</button>
-            </div>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
         </nav>
     </header>
 
     <!-- Main Content -->
-    <main class="main-content">
-        <!-- Home Page -->
-        <div class="page active" id="home">
+    <main class="main">
+        <div class="container">
+            <!-- Hero Section -->
             <section class="hero">
-                <div class="container">
-                    <h1>اكتشف عالم الأدب العربي</h1>
-                    <p>منصة شاملة للقراءة والكتابة والنشر الأدبي باللغة العربية</p>
-                    <div style="display: flex; gap: 1rem; justify-content: center;">
-                        <a href="#" class="btn btn-primary" data-page="library">استكشف المكتبة</a>
-                        <a href="#" class="btn btn-secondary" data-page="writer">ابدأ الكتابة</a>
+                <h1>اكتشف عالم الروايات العربية</h1>
+                <p>مجموعة متنوعة من أفضل الروايات العربية الحديثة والكلاسيكية، مع تقييمات حقيقية من القراء</p>
+            </section>
+
+            <!-- Filters -->
+            <section class="filters">
+                <div class="custom-select">
+                    <button class="select-button" onclick="toggleDropdown('category')">
+                        <span id="categoryText">جميع التصنيفات</span>
+                        <span class="select-arrow">▼</span>
+                    </button>
+                    <div class="select-options" id="categoryOptions">
+                        <div class="select-option" onclick="selectCategory('')">جميع التصنيفات</div>
+                        <div class="select-option" onclick="selectCategory('رومانسي')">رومانسي</div>
+                        <div class="select-option" onclick="selectCategory('خيال علمي')">خيال علمي</div>
+                        <div class="select-option" onclick="selectCategory('تاريخي')">تاريخي</div>
+                        <div class="select-option" onclick="selectCategory('مغامرات')">مغامرات</div>
+                        <div class="select-option" onclick="selectCategory('درامي')">درامي</div>
                     </div>
+                </div>
+
+                <div class="custom-select">
+                    <button class="select-button" onclick="toggleDropdown('sort')">
+                        <span id="sortText">ترتيب حسب</span>
+                        <span class="select-arrow">▼</span>
+                    </button>
+                    <div class="select-options" id="sortOptions">
+                        <div class="select-option" onclick="selectSort('rating')">الأعلى تقييماً</div>
+                        <div class="select-option" onclick="selectSort('readers')">الأكثر قراءة</div>
+                        <div class="select-option" onclick="selectSort('date')">الأحدث</div>
+                        <div class="select-option" onclick="selectSort('alphabetical')">أبجدياً</div>
+                    </div>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" class="search-input" placeholder="البحث عن رواية..." onkeyup="searchNovels(this.value)">
                 </div>
             </section>
 
-            <section class="container">
-                <div class="features-grid">
-                    <div class="feature-card fade-in">
-                        <div class="feature-icon">
-                            <i class="fas fa-book-open"></i>
-                        </div>
-                        <h3>مكتبة غنية</h3>
-                        <p>آلاف الروايات والقصص من أبرز الكتاب العرب والمواهب الجديدة</p>
-                    </div>
-                    <div class="feature-card fade-in">
-                        <div class="feature-icon">
-                            <i class="fas fa-pen-fancy"></i>
-                        </div>
-                        <h3>محرر متطور</h3>
-                        <p>أدوات كتابة احترافية مع حفظ تلقائي وتنسيق متقدم</p>
-                    </div>
-                    <div class="feature-card fade-in">
-                        <div class="feature-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <h3>مجتمع أدبي</h3>
-                        <p>تفاعل مع القراء والكتاب وشارك في النقاشات الأدبية</p>
-                    </div>
-                    <div class="feature-card fade-in">
-                        <div class="feature-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <h3>ذكاء اصطناعي</h3>
-                        <p>توصيات ذكية ومساعد كتابة لتحسين تجربتك الأدبية</p>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- Library Page -->
-        <div class="page" id="library">
-            <div class="container">
-                <div class="library-header">
-                    <h1>المكتبة الأدبية</h1>
-                    <div class="search-bar">
-                        <input type="text" class="search-input" placeholder="ابحث عن كتاب أو مؤلف..." id="searchInput">
-                        <select class="filter-select" id="genreFilter">
-                            <option value="">جميع الأنواع</option>
-                            <option value="رواية">رواية</option>
-                            <option value="قصة">قصة قصيرة</option>
-                            <option value="شعر">شعر</option>
-                            <option value="مقال">مقال</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="books-grid" id="booksGrid">
-                    <!-- Books will be loaded here -->
-                </div>
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>جاري تحميل الروايات...</p>
             </div>
-        </div>
 
-        <!-- Reader Page -->
-        <div class="page" id="reader">
-            <div class="container">
-                <div class="reader-container">
-                    <div class="reader-header">
-                        <button class="btn btn-secondary" onclick="showPage('library')">
-                            <i class="fas fa-arrow-right"></i> العودة للمكتبة
-                        </button>
-                        <div class="reader-controls">
-                            <button class="btn btn-secondary" id="fontSizeBtn">
-                                <i class="fas fa-text-height"></i>
-                            </button>
-                            <button class="btn btn-secondary" id="nightModeBtn">
-                                <i class="fas fa-moon"></i>
-                            </button>
-                            <button class="btn btn-secondary" id="bookmarkBtn">
-                                <i class="fas fa-bookmark"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="reader-content" id="readerContent">
-                        <!-- Book content will be loaded here -->
-                    </div>
-                    <div class="chapter-nav">
-                        <button class="btn btn-secondary" id="prevChapter">الفصل السابق</button>
-                        <span id="chapterProgress">الفصل 1 من 10</span>
-                        <button class="btn btn-primary" id="nextChapter">الفصل التالي</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Writer Page -->
-        <div class="page" id="writer">
-            <div class="container">
-                <div class="writer-interface">
-                    <div class="writer-sidebar">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <h3>فصول الرواية</h3>
-                            <button class="btn btn-primary" id="addChapterBtn" style="padding: 0.5rem;">
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        </div>
-                        <ul class="chapters-list" id="chaptersList">
-                            <li class="chapter-item active" data-chapter="1">
-                                <i class="fas fa-file-alt"></i> الفصل الأول
-                            </li>
-                        </ul>
-                        <div style="margin-top: 2rem;">
-                            <button class="btn btn-primary" style="width: 100%; margin-bottom: 1rem;" id="saveBtn">
-                                <i class="fas fa-save"></i> حفظ
-                            </button>
-                            <button class="btn btn-secondary" style="width: 100%;" id="publishBtn">
-                                <i class="fas fa-upload"></i> نشر
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="editor-container">
-                        <div class="editor-toolbar">
-                            <input type="text" placeholder="عنوان الفصل..." id="chapterTitle" style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
-                            <button class="btn btn-secondary" id="boldBtn">
-                                <i class="fas fa-bold"></i>
-                            </button>
-                            <button class="btn btn-secondary" id="italicBtn">
-                                <i class="fas fa-italic"></i>
-                            </button>
-                            <button class="btn btn-secondary" id="undoBtn">
-                                <i class="fas fa-undo"></i>
-                            </button>
-                            <span id="wordCount">عدد الكلمات: 0</span>
-                        </div>
-                        <textarea class="editor" id="textEditor" placeholder="ابدأ كتابة روايتك هنا..."></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Profile Page -->
-        <div class="page" id="profile">
-            <div class="container">
-                <div class="profile-container">
-                    <div class="profile-sidebar">
-                        <div class="profile-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="profile-info">
-                            <h2 id="userName">أحمد الكاتب</h2>
-                            <p>كاتب وروائي</p>
-                            <p>انضم في يناير 2024</p>
-                        </div>
-                        <div class="profile-stats">
-                            <div class="stat-item">
-                                <div class="stat-number" id="booksCount">5</div>
-                                <div>الكتب</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="readersCount">1.2K</div>
-                                <div>القراء</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="reviewsCount">89</div>
-                                <div>المراجعات</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-number" id="ratingAvg">4.8</div>
-                                <div>التقييم</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="profile-content">
-                        <div class="tabs">
-                            <button class="tab active" data-tab="books">أعمالي</button>
-                            <button class="tab" data-tab="reading">قائمة القراءة</button>
-                            <button class="tab" data-tab="activity">النشاط</button>
-                            <button class="tab" data-tab="settings">الإعدادات</button>
-                        </div>
-                        
-                        <div class="tab-content" id="tabContent">
-                            <!-- Tab content will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Novels Grid -->
+            <section class="novels-grid" id="novelsGrid"></section>
         </div>
     </main>
 
-    <!-- Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
             <div class="modal-header">
-                <h2>الإعدادات</h2>
-                <button class="close-modal" onclick="closeModal('settingsModal')">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h2 class="modal-title" id="modalTitle">تفاصيل الرواية</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
-            
-            <div class="settings-group">
-                <h3>المظهر</h3>
-                <div class="setting-item">
-                    <span>الوضع الليلي</span>
-                    <div class="toggle" id="nightModeToggle"></div>
-                </div>
-                <div class="setting-item">
-                    <span>حجم الخط</span>
-                    <select id="fontSizeSelect">
-                        <option value="small">صغير</option>
-                        <option value="medium" selected>متوسط</option>
-                        <option value="large">كبير</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="settings-group">
-                <h3>القراءة</h3>
-                <div class="setting-item">
-                    <span>الحفظ التلقائي</span>
-                    <div class="toggle active" id="autoSaveToggle"></div>
-                </div>
-                <div class="setting-item">
-                    <span>الإشعارات</span>
-                    <div class="toggle active" id="notificationsToggle"></div>
-                </div>
-            </div>
-            
-            <div class="settings-group">
-                <h3>الخصوصية</h3>
-                <div class="setting-item">
-                    <span>إظهار نشاط القراءة</span>
-                    <div class="toggle active" id="activityToggle"></div>
-                </div>
-                <div class="setting-item">
-                    <span>قبول رسائل القراء</span>
-                    <div class="toggle active" id="messagesToggle"></div>
-                </div>
+            <div class="modal-content" id="modalContent">
+                <!-- Content will be dynamically loaded -->
             </div>
         </div>
     </div>
 
     <script>
-        // Application State
-        const appState = {
-            currentPage: 'home',
-            currentBook: null,
-            currentChapter: 1,
-            isNightMode: false,
-            fontSize: 'medium',
-            currentUser: {
-                name: 'أحمد الكاتب',
-                books: [],
-                readingList: [],
-                bookmarks: []
-            },
-            books: [
-                {
-                    id: 1,
-                    title: 'رحلة في أعماق النفس',
-                    author: 'سارة الأديبة',
-                    genre: 'رواية',
-                    rating: 4.8,
-                    reads: 1500,
-                    chapters: [
-                        {
-                            title: 'البداية',
-                            content: 'في صباح ذلك اليوم الربيعي، استيقظت سارة على صوت العصافير التي تغرد خارج نافذة غرفتها. كان الضوء الذهبي للشمس يتسلل عبر الستائر البيضاء، مرسلاً خيوطاً من النور تتراقص على جدران الغرفة...'
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    title: 'أسرار المدينة القديمة',
-                    author: 'محمد الحكواتي',
-                    genre: 'رواية',
-                    rating: 4.6,
-                    reads: 2300,
-                    chapters: []
-                },
-                {
-                    id: 3,
-                    title: 'قصائد من القلب',
-                    author: 'ليلى الشاعرة',
-                    genre: 'شعر',
-                    rating: 4.9,
-                    reads: 890,
-                    chapters: []
-                }
-            ]
+        // تكوين Firebase (يجب استبدال هذه البيانات ببياناتك الحقيقية)
+        const firebaseConfig = {
+            // ضع هنا إعدادات Firebase الخاصة بك
         };
 
-        // DOM Elements
-        const navLinks = document.querySelectorAll('.nav-link');
-        const pages = document.querySelectorAll('.page');
-        const booksGrid = document.getElementById('booksGrid');
-        const searchInput = document.getElementById('searchInput');
-        const genreFilter = document.getElementById('genreFilter');
-        const readerContent = document.getElementById('readerContent');
-        const textEditor = document.getElementById('textEditor');
-        const chapterTitle = document.getElementById('chapterTitle');
-        const wordCount = document.getElementById('wordCount');
-        const settingsModal = document.getElementById('settingsModal');
-        const nightModeToggle = document.getElementById('nightModeToggle');
-
-        // Navigation
-        function showPage(pageId) {
-            // Update nav links
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.dataset.page === pageId) {
-                    link.classList.add('active');
-                }
-            });
-
-            // Update pages
-            pages.forEach(page => {
-                page.classList.remove('active');
-                if (page.id === pageId) {
-                    page.classList.add('active');
-                    page.classList.add('fade-in');
-                }
-            });
-
-            appState.currentPage = pageId;
-
-            // Load page-specific content
-            if (pageId === 'library') {
-                loadBooks();
-            } else if (pageId === 'profile') {
-                loadProfile();
+        // بيانات الروايات الأساسية
+        let novels = [
+            {
+                id: 1,
+                title: "النفس الأخيرة",
+                author: "محمد الكاتب",
+                category: "درامي",
+                description: "رواية تحكي قصة رجل في لحظاته الأخيرة، يستذكر حياته ويواجه ماضيه. قصة مؤثرة عن الندم والغفران والحب الذي لا ينتهي.",
+                coverGradient: "linear-gradient(45deg, #2c3e50, #34495e)",
+                publishDate: "2024-01-15",
+                chapters: 25,
+                status: "مكتملة"
+            },
+            {
+                id: 2,
+                title: "صوت الريح",
+                author: "سارة أحمد",
+                category: "رومانسي",
+                description: "قصة حب خالدة تدور أحداثها في الريف العربي، حيث تلتقي فتاة بشاب في ظروف غامضة، وتبدأ رحلة عشق تتحدى كل العقبات.",
+                coverGradient: "linear-gradient(45deg, #e74c3c, #c0392b)",
+                publishDate: "2024-02-10",
+                chapters: 30,
+                status: "مكتملة"
+            },
+            {
+                id: 3,
+                title: "أسرار المدينة المفقودة",
+                author: "أحمد علي",
+                category: "مغامرات",
+                description: "مغامرة شيقة في البحث عن مدينة أثرية مفقودة، مليئة بالألغاز والأسرار التي تغير مجرى التاريخ.",
+                coverGradient: "linear-gradient(45deg, #f39c12, #e67e22)",
+                publishDate: "2024-03-05",
+                chapters: 18,
+                status: "قيد الكتابة"
+            },
+            {
+                id: 4,
+                title: "بين النجوم",
+                author: "ليلى محمود",
+                category: "خيال علمي",
+                description: "رحلة عبر الفضاء إلى عوالم أخرى، حيث تكتشف البشرية حضارات جديدة وتواجه تحديات لم تخطر على بال أحد.",
+                coverGradient: "linear-gradient(45deg, #9b59b6, #8e44ad)",
+                publishDate: "2024-01-28",
+                chapters: 22,
+                status: "مكتملة"
+            },
+            {
+                id: 5,
+                title: "عربة الزمن",
+                author: "خالد حسن",
+                category: "تاريخي",
+                description: "رواية تاريخية تأخذنا في رحلة عبر العصور المختلفة، من العصر الجاهلي إلى العصر الحديث، لنشهد تطور الحضارة العربية.",
+                coverGradient: "linear-gradient(45deg, #27ae60, #229954)",
+                publishDate: "2024-02-20",
+                chapters: 35,
+                status: "مكتملة"
+            },
+            {
+                id: 6,
+                title: "همسات القلب",
+                author: "فاطمة الزهراء",
+                category: "رومانسي",
+                description: "قصة حب رقيقة تحكي عن طبيبة شابة تلتقي بمهندس في المستشفى، وكيف تنمو بينهما علاقة حب تتحدى ظروف الحياة الصعبة.",
+                coverGradient: "linear-gradient(45deg, #e91e63, #ad1457)",
+                publishDate: "2024-03-12",
+                chapters: 20,
+                status: "قيد الكتابة"
             }
-        }
+        ];
 
-        // Event Listeners for Navigation
-        navLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                showPage(link.dataset.page);
-            });
-        });
+        // بيانات التفاعل (محفوظة محلياً ومتزامنة مع الخادم)
+        let novelData = {};
 
-        // Handle navigation from buttons
-        document.addEventListener('click', (e) => {
-            if (e.target.dataset.page) {
-                e.preventDefault();
-                showPage(e.target.dataset.page);
+        // المتغيرات العامة
+        let currentFilter = '';
+        let currentSort = '';
+        let searchTerm = '';
+        let savedNovels = JSON.parse(localStorage.getItem('savedNovels')) || [];
+
+        // تحميل بيانات التفاعل عند بدء التشغيل
+        async function initializeApp() {
+            // محاكاة تحميل البيانات من Firebase
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // تحميل بيانات التفاعل المحفوظة محلياً أو إنشاء بيانات افتراضية
+            const savedData = localStorage.getItem('novelData');
+            if (savedData) {
+                novelData = JSON.parse(savedData);
+            } else {
+                // إنشاء بيانات تفاعل افتراضية واقعية
+                novels.forEach(novel => {
+                    novelData[novel.id] = {
+                        readers: Math.floor(Math.random() * 50000) + 10000,
+                        rating: (Math.random() * 2 + 3).toFixed(1), // تقييم بين 3-5
+                        ratings: [],
+                        views: Math.floor(Math.random() * 100000) + 50000
+                    };
+                });
+                saveNovelData();
             }
-        });
 
-        // Library Functions
-        function loadBooks() {
-            const filteredBooks = filterBooks();
-            displayBooks(filteredBooks);
+            document.getElementById('loading').style.display = 'none';
+            displayNovels();
         }
 
-        function filterBooks() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const selectedGenre = genreFilter.value;
-
-            return appState.books.filter(book => {
-                const matchesSearch = book.title.toLowerCase().includes(searchTerm) ||
-                                    book.author.toLowerCase().includes(searchTerm);
-                const matchesGenre = !selectedGenre || book.genre === selectedGenre;
-                return matchesSearch && matchesGenre;
-            });
+        // حفظ بيانات التفاعل
+        function saveNovelData() {
+            localStorage.setItem('novelData', JSON.stringify(novelData));
         }
 
-        function displayBooks(books) {
-            booksGrid.innerHTML = books.map(book => `
-                <div class="book-card" onclick="openBook(${book.id})">
-                    <div class="book-cover">
-                        ${book.title}
+        // عرض الروايات
+        function displayNovels() {
+            const grid = document.getElementById('novelsGrid');
+            let filteredNovels = novels.slice();
+
+            // تطبيق الفلاتر
+            if (currentFilter) {
+                filteredNovels = filteredNovels.filter(novel => 
+                    novel.category === currentFilter
+                );
+            }
+
+            // تطبيق البحث
+            if (searchTerm) {
+                filteredNovels = filteredNovels.filter(novel =>
+                    novel.title.includes(searchTerm) ||
+                    novel.author.includes(searchTerm) ||
+                    novel.description.includes(searchTerm)
+                );
+            }
+
+            // تطبيق الترتيب
+            if (currentSort) {
+                filteredNovels.sort((a, b) => {
+                    switch (currentSort) {
+                        case 'rating':
+                            return parseFloat(novelData[b.id].rating) - parseFloat(novelData[a.id].rating);
+                        case 'readers':
+                            return novelData[b.id].readers - novelData[a.id].readers;
+                        case 'date':
+                            return new Date(b.publishDate) - new Date(a.publishDate);
+                        case 'alphabetical':
+                            return a.title.localeCompare(b.title, 'ar');
+                        default:
+                            return 0;
+                    }
+                });
+            }
+
+            grid.innerHTML = filteredNovels.map(novel => {
+                const data = novelData[novel.id];
+                const isSaved = savedNovels.includes(novel.id);
+                
+                return `
+                    <div class="novel-card" oncontextmenu="showNovelModal(${novel.id}); return false;" ontouchstart="handleTouchStart(${novel.id})" ontouchend="handleTouchEnd()">
+                        <div class="novel-cover" style="background: ${novel.coverGradient}">
+                            ${novel.title}
+                        </div>
+                        <div class="novel-info">
+                            <h3 class="novel-title">${novel.title}</h3>
+                            <p class="novel-author">بقلم: ${novel.author}</p>
+                            <div class="novel-stats">
+                                <div class="stat">
+                                    <span class="stat-value">${formatNumber(data.readers)}</span>
+                                    <span class="stat-label">قارئ</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">${data.rating}</span>
+                                    <span class="stat-label">تقييم</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">${novel.chapters}</span>
+                                    <span class="stat-label">فصل</span>
+                                </div>
+                            </div>
+                            <p class="novel-description">${novel.description}</p>
+                            <div class="novel-actions">
+                                <a href="#" class="btn btn-primary" onclick="startReading(${novel.id})">قراءة</a>
+                                <button class="btn btn-save ${isSaved ? 'saved' : ''}" onclick="toggleSave(${novel.id})" title="${isSaved ? 'إزالة من المحفوظات' : 'حفظ'}">
+                                    ${isSaved ? '★' : '☆'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="book-info">
-                        <h3 class="book-title">${book.title}</h3>
-                        <p class="book-author">بقلم: ${book.author}</p>
-                        <p style="color: var(--accent-color); font-weight: 600;">${book.genre}</p>
-                        <div class="book-stats">
-                            <div class="rating">
-                                <i class="fas fa-star" style="color: gold;"></i>
-                                <span>${book.rating}</span>
-                            </div>
-                            <div>
-                                <i class="fas fa-eye"></i>
-                                <span>${book.reads} قارئ</span>
-                            </div>
+                `;
+            }).join('');
+        }
+
+        // معالجة اللمس الطويل للهواتف
+        let touchTimer;
+        function handleTouchStart(novelId) {
+            touchTimer = setTimeout(() => {
+                showNovelModal(novelId);
+            }, 800);
+        }
+
+        function handleTouchEnd() {
+            clearTimeout(touchTimer);
+        }
+
+        // عرض نافذة تفاصيل الرواية
+        function showNovelModal(novelId) {
+            const novel = novels.find(n => n.id === novelId);
+            const data = novelData[novelId];
+            
+            if (!novel) return;
+
+            // زيادة عدد المشاهدات
+            data.views++;
+            saveNovelData();
+
+            const modal = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            const title = document.getElementById('modalTitle');
+
+            title.textContent = novel.title;
+            
+            content.innerHTML = `
+                <div class="modal-novel-info">
+                    <div class="modal-cover" style="background: ${novel.coverGradient}">
+                        ${novel.title}
+                    </div>
+                    <div class="modal-details">
+                        <h3>${novel.title}</h3>
+                        <p><strong>الكاتب:</strong> ${novel.author}</p>
+                        <p><strong>التصنيف:</strong> ${novel.category}</p>
+                        <p><strong>عدد الفصول:</strong> ${novel.chapters}</p>
+                        <p><strong>الحالة:</strong> ${novel.status}</p>
+                        <p><strong>تاريخ النشر:</strong> ${formatDate(novel.publishDate)}</p>
+                        <p><strong>الوصف:</strong> ${novel.description}</p>
+                    </div>
+                </div>
+
+                <div class="rating-section">
+                    <div class="rating-display">
+                        <h4>التقييم الحالي: ${data.rating}/5</h4>
+                        <div class="rating-stars">
+                            ${generateStarsDisplay(parseFloat(data.rating))}
+                        </div>
+                        <span>(${data.ratings.length} تقييم)</span>
+                    </div>
+                    
+                    <div class="rating-input">
+                        <h4>قيّم هذه الرواية:</h4>
+                        <div class="rating-stars">
+                            ${generateRatingStars(novelId)}
                         </div>
                     </div>
                 </div>
-            `).join('');
+
+                <div class="novel-actions">
+                    <a href="#" class="btn btn-primary" onclick="startReading(${novelId}); closeModal();">بدء القراءة</a>
+                    <button class="btn btn-secondary" onclick="toggleSave(${novelId}); closeModal();">
+                        ${savedNovels.includes(novelId) ? 'إزالة من المحفوظات' : 'حفظ في المفضلة'}
+                    </button>
+                </div>
+            `;
+
+            modal.classList.add('show');
         }
 
-        // Search and Filter Event Listeners
-        searchInput.addEventListener('input', loadBooks);
-        genreFilter.addEventListener('change', loadBooks);
-
-        // Reader Functions
-        function openBook(bookId) {
-            const book = appState.books.find(b => b.id === bookId);
-            if (book) {
-                appState.currentBook = book;
-                appState.currentChapter = 1;
-                loadChapter();
-                showPage('reader');
-            }
+        // إغلاق النافذة المنبثقة
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('modalOverlay').classList.remove('show');
         }
 
-        function loadChapter() {
-            if (!appState.currentBook || !appState.currentBook.chapters.length) {
-                readerContent.innerHTML = `
-                    <div class="chapter-title">عذراً</div>
-                    <div class="chapter-text">هذا الكتاب غير متوفر للقراءة حالياً.</div>
-                `;
-                return;
-            }
-
-            const chapter = appState.currentBook.chapters[appState.currentChapter - 1];
-            if (chapter) {
-                readerContent.innerHTML = `
-                    <div class="chapter-title">${chapter.title}</div>
-                    <div class="chapter-text">${chapter.content}</div>
-                `;
-                
-                // Update chapter progress
-                const progressEl = document.getElementById('chapterProgress');
-                if (progressEl) {
-                    progressEl.textContent = `الفصل ${appState.currentChapter} من ${appState.currentBook.chapters.length}`;
+        // إنشاء نجوم العرض
+        function generateStarsDisplay(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    stars += '<span class="star active">★</span>';
+                } else if (i - 0.5 <= rating) {
+                    stars += '<span class="star active">☆</span>';
+                } else {
+                    stars += '<span class="star">☆</span>';
                 }
             }
+            return stars;
         }
 
-        // Chapter Navigation
-        document.getElementById('nextChapter')?.addEventListener('click', () => {
-            if (appState.currentBook && appState.currentChapter < appState.currentBook.chapters.length) {
-                appState.currentChapter++;
-                loadChapter();
+        // إنشاء نجوم التقييم التفاعلية
+        function generateRatingStars(novelId) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                stars += `<span class="star" onclick="rateNovel(${novelId}, ${i})" onmouseover="highlightStars(${i})" onmouseout="resetStars()">☆</span>`;
             }
-        });
-
-        document.getElementById('prevChapter')?.addEventListener('click', () => {
-            if (appState.currentChapter > 1) {
-                appState.currentChapter--;
-                loadChapter();
-            }
-        });
-
-        // Writer Functions
-        let currentChapterIndex = 0;
-        let chapters = [{ title: 'الفصل الأول', content: '' }];
-
-        function updateWordCount() {
-            const text = textEditor.value;
-            const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-            wordCount.textContent = `عدد الكلمات: ${words}`;
+            return stars;
         }
 
-        function saveCurrentChapter() {
-            if (chapters[currentChapterIndex]) {
-                chapters[currentChapterIndex].title = chapterTitle.value || `الفصل ${currentChapterIndex + 1}`;
-                chapters[currentChapterIndex].content = textEditor.value;
-            }
-        }
-
-        function loadChapterInEditor(index) {
-            saveCurrentChapter();
-            currentChapterIndex = index;
-            const chapter = chapters[index];
+        // تقييم الرواية
+        function rateNovel(novelId, rating) {
+            const data = novelData[novelId];
+            data.ratings.push(rating);
             
-            chapterTitle.value = chapter.title;
-            textEditor.value = chapter.content;
-            updateWordCount();
+            // حساب متوسط التقييم الجديد
+            const average = data.ratings.reduce((sum, r) => sum + r, 0) / data.ratings.length;
+            data.rating = average.toFixed(1);
             
-            // Update active chapter in sidebar
-            document.querySelectorAll('.chapter-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
+            saveNovelData();
+            displayNovels();
+            closeModal();
+            
+            // إظهار رسالة شكر
+            showNotification('تم إضافة تقييمك بنجاح!');
+        }
+
+        // تسليط الضوء على النجوم
+        function highlightStars(rating) {
+            const stars = document.querySelectorAll('.rating-input .star');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
             });
         }
 
-        function addNewChapter() {
-            const newChapter = {
-                title: `الفصل ${chapters.length + 1}`,
-                content: ''
-            };
-            chapters.push(newChapter);
-            updateChaptersList();
+        // إعادة تعيين النجوم
+        function resetStars() {
+            const stars = document.querySelectorAll('.rating-input .star');
+            stars.forEach(star => star.classList.remove('active'));
         }
 
-        function updateChaptersList() {
-            const chaptersList = document.getElementById('chaptersList');
-            chaptersList.innerHTML = chapters.map((chapter, index) => `
-                <li class="chapter-item ${index === currentChapterIndex ? 'active' : ''}" 
-                    onclick="loadChapterInEditor(${index})">
-                    <i class="fas fa-file-alt"></i> ${chapter.title}
-                </li>
-            `).join('');
-        }
-
-        // Writer Event Listeners
-        textEditor?.addEventListener('input', updateWordCount);
-        document.getElementById('addChapterBtn')?.addEventListener('click', addNewChapter);
-
-        document.getElementById('saveBtn')?.addEventListener('click', () => {
-            saveCurrentChapter();
-            showNotification('تم حفظ العمل بنجاح', 'success');
-        });
-
-        document.getElementById('publishBtn')?.addEventListener('click', () => {
-            saveCurrentChapter();
-            showNotification('تم نشر العمل بنجاح', 'success');
-        });
-
-        // Formatting Buttons
-        document.getElementById('boldBtn')?.addEventListener('click', () => {
-            document.execCommand('bold');
-        });
-
-        document.getElementById('italicBtn')?.addEventListener('click', () => {
-            document.execCommand('italic');
-        });
-
-        document.getElementById('undoBtn')?.addEventListener('click', () => {
-            document.execCommand('undo');
-        });
-
-        // Profile Functions
-        function loadProfile() {
-            const tabContent = document.getElementById('tabContent');
-            loadProfileTab('books');
-        }
-
-        function loadProfileTab(tabName) {
-            const tabContent = document.getElementById('tabContent');
+        // بدء القراءة
+        function startReading(novelId) {
+            const data = novelData[novelId];
+            data.readers++;
+            saveNovelData();
+            displayNovels();
             
-            // Update active tab
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.tab === tabName);
-            });
+            // توجيه إلى صفحة القراءة (يمكن تطويرها لاحقاً)
+            showNotification('جاري توجيهك إلى صفحة القراءة...');
+            // window.location.href = `read.html?novel=${novelId}`;
+        }
+
+        // حفظ/إلغاء حفظ الرواية
+        function toggleSave(novelId) {
+            const index = savedNovels.indexOf(novelId);
+            if (index > -1) {
+                savedNovels.splice(index, 1);
+                showNotification('تم إزالة الرواية من المحفوظات');
+            } else {
+                savedNovels.push(novelId);
+                showNotification('تم حفظ الرواية في المفضلة');
+            }
             
-            switch(tabName) {
-                case 'books':
-                    tabContent.innerHTML = `
-                        <h3>أعمالي المنشورة</h3>
-                        <div class="books-grid">
-                            ${appState.books.slice(0, 3).map(book => `
-                                <div class="book-card">
-                                    <div class="book-cover">${book.title}</div>
-                                    <div class="book-info">
-                                        <h4>${book.title}</h4>
-                                        <p>${book.genre}</p>
-                                    </div>
+            localStorage.setItem('savedNovels', JSON.stringify(savedNovels));
+            displayNovels();
+        }
+
+        // عرض الروايات المحفوظة
+        function showSavedNovels() {
+            if (savedNovels.length === 0) {
+                showNotification('لا توجد روايات محفوظة');
+                return;
+            }
+            
+            currentFilter = '';
+            currentSort = '';
+            searchTerm = '';
+            
+            // عرض الروايات المحفوظة فقط
+            const grid = document.getElementById('novelsGrid');
+            const filteredNovels = novels.filter(novel => savedNovels.includes(novel.id));
+            
+            grid.innerHTML = filteredNovels.map(novel => {
+                const data = novelData[novel.id];
+                
+                return `
+                    <div class="novel-card" oncontextmenu="showNovelModal(${novel.id}); return false;" ontouchstart="handleTouchStart(${novel.id})" ontouchend="handleTouchEnd()">
+                        <div class="novel-cover" style="background: ${novel.coverGradient}">
+                            ${novel.title}
+                        </div>
+                        <div class="novel-info">
+                            <h3 class="novel-title">${novel.title}</h3>
+                            <p class="novel-author">بقلم: ${novel.author}</p>
+                            <div class="novel-stats">
+                                <div class="stat">
+                                    <span class="stat-value">${formatNumber(data.readers)}</span>
+                                    <span class="stat-label">قارئ</span>
                                 </div>
-                            `).join('')}
-                        </div>
-                    `;
-                    break;
-                case 'reading':
-                    tabContent.innerHTML = `
-                        <h3>قائمة القراءة</h3>
-                        <p>الكتب المحفوظة للقراءة لاحقاً</p>
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    `;
-                    break;
-                case 'activity':
-                    tabContent.innerHTML = `
-                        <h3>النشاط الأخير</h3>
-                        <div style="padding: 2rem; text-align: center;">
-                            <i class="fas fa-chart-line" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
-                            <p>سيتم عرض إحصائيات النشاط هنا</p>
-                        </div>
-                    `;
-                    break;
-                case 'settings':
-                    tabContent.innerHTML = `
-                        <h3>إعدادات الحساب</h3>
-                        <div class="settings-group">
-                            <div class="setting-item">
-                                <span>اسم المستخدم</span>
-                                <input type="text" value="${appState.currentUser.name}" style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                                <div class="stat">
+                                    <span class="stat-value">${data.rating}</span>
+                                    <span class="stat-label">تقييم</span>
+                                </div>
+                                <div class="stat">
+                                    <span class="stat-value">${novel.chapters}</span>
+                                    <span class="stat-label">فصل</span>
+                                </div>
                             </div>
-                            <div class="setting-item">
-                                <span>البريد الإلكتروني</span>
-                                <input type="email" value="ahmed@example.com" style="padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <p class="novel-description">${novel.description}</p>
+                            <div class="novel-actions">
+                                <a href="#" class="btn btn-primary" onclick="startReading(${novel.id})">قراءة</a>
+                                <button class="btn btn-save saved" onclick="toggleSave(${novel.id})" title="إزالة من المحفوظات">★</button>
                             </div>
                         </div>
-                        <button class="btn btn-primary" style="margin-top: 1rem;">حفظ التغييرات</button>
-                    `;
-                    break;
-            }
-        }
-
-        // Profile Tab Event Listeners
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                loadProfileTab(tab.dataset.tab);
-            });
-        });
-
-        // Settings Modal Functions
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        document.getElementById('settingsBtn')?.addEventListener('click', () => {
-            openModal('settingsModal');
-        });
-
-        // Toggle Functions
-        function toggleElement(element) {
-            element.classList.toggle('active');
-        }
-
-        // Night Mode
-        function toggleNightMode() {
-            appState.isNightMode = !appState.isNightMode;
-            document.body.classList.toggle('night-mode', appState.isNightMode);
-            nightModeToggle.classList.toggle('active', appState.isNightMode);
-        }
-
-        nightModeToggle?.addEventListener('click', toggleNightMode);
-        document.getElementById('nightModeBtn')?.addEventListener('click', toggleNightMode);
-
-        // Other Settings Toggles
-        document.querySelectorAll('.toggle').forEach(toggle => {
-            toggle.addEventListener('click', () => {
-                toggleElement(toggle);
-            });
-        });
-
-        // Font Size Control
-        document.getElementById('fontSizeBtn')?.addEventListener('click', () => {
-            const sizes = ['small', 'medium', 'large'];
-            const currentIndex = sizes.indexOf(appState.fontSize);
-            const nextIndex = (currentIndex + 1) % sizes.length;
-            appState.fontSize = sizes[nextIndex];
+                    </div>
+                `;
+            }).join('');
             
-            document.documentElement.style.setProperty('--reader-font-size', 
-                appState.fontSize === 'small' ? '1rem' : 
-                appState.fontSize === 'large' ? '1.4rem' : '1.2rem'
-            );
-        });
+            // تحديث العنوان
+            document.querySelector('.hero h1').textContent = 'الروايات المحفوظة';
+            document.querySelector('.hero p').textContent = `لديك ${savedNovels.length} رواية محفوظة`;
+        }
 
-        // Bookmark Function
-        document.getElementById('bookmarkBtn')?.addEventListener('click', () => {
-            if (appState.currentBook) {
-                const bookmark = {
-                    bookId: appState.currentBook.id,
-                    chapter: appState.currentChapter,
-                    timestamp: new Date()
-                };
-                appState.currentUser.bookmarks.push(bookmark);
-                showNotification('تم إضافة إشارة مرجعية', 'success');
+        // البحث في الروايات
+        function searchNovels(term) {
+            searchTerm = term;
+            displayNovels();
+        }
+
+        // تبديل القوائم المنسدلة
+        function toggleDropdown(type) {
+            const button = document.querySelector(`#${type}Options`).previousElementSibling;
+            const options = document.getElementById(`${type}Options`);
+            
+            // إغلاق القوائم الأخرى
+            document.querySelectorAll('.select-options').forEach(opt => {
+                if (opt !== options) {
+                    opt.classList.remove('show');
+                    opt.previousElementSibling.classList.remove('open');
+                }
+            });
+            
+            // تبديل القائمة الحالية
+            options.classList.toggle('show');
+            button.classList.toggle('open');
+        }
+
+        // اختيار التصنيف
+        function selectCategory(category) {
+            currentFilter = category;
+            document.getElementById('categoryText').textContent = category || 'جميع التصنيفات';
+            toggleDropdown('category');
+            displayNovels();
+        }
+
+        // اختيار الترتيب
+        function selectSort(sort) {
+            currentSort = sort;
+            const sortTexts = {
+                'rating': 'الأعلى تقييماً',
+                'readers': 'الأكثر قراءة',
+                'date': 'الأحدث',
+                'alphabetical': 'أبجدياً'
+            };
+            document.getElementById('sortText').textContent = sortTexts[sort] || 'ترتيب حسب';
+            toggleDropdown('sort');
+            displayNovels();
+        }
+
+        // تبديل القائمة في الهواتف
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('show');
+        }
+
+        // تنسيق الأرقام
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'م';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'ك';
             }
-        });
+            return num.toString();
+        }
 
-        // Notification System
-        function showNotification(message, type = 'info') {
+        // تنسيق التاريخ
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ar-SA', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // إظهار الإشعارات
+        function showNotification(message) {
+            // إنشاء إشعار مخصص
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
                 top: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: ${type === 'success' ? '#28a745' : '#007bff'};
+                right: 20px;
+                background: #f47521;
                 color: white;
-                padding: 1rem 2rem;
+                padding: 1rem 1.5rem;
                 border-radius: 8px;
-                box-shadow: var(--shadow);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
                 z-index: 3000;
-                animation: fadeIn 0.3s ease-out;
+                font-family: 'Cairo', sans-serif;
+                animation: slideIn 0.3s ease-out;
             `;
-            notification.textContent = message;
             
+            notification.textContent = message;
             document.body.appendChild(notification);
             
+            // إضافة الرسوم المتحركة
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // إزالة الإشعار بعد 3 ثوان
             setTimeout(() => {
-                notification.style.animation = 'fadeOut 0.3s ease-out';
+                notification.style.animation = 'slideOut 0.3s ease-out forwards';
                 setTimeout(() => {
                     document.body.removeChild(notification);
+                    document.head.removeChild(style);
                 }, 300);
             }, 3000);
-        }
-
-        // Auto-save functionality
-        let autoSaveInterval;
-        
-        function enableAutoSave() {
-            autoSaveInterval = setInterval(() => {
-                if (appState.currentPage === 'writer') {
-                    saveCurrentChapter();
+            
+            // إضافة رسوم متحركة للخروج
+            style.textContent += `
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
                 }
-            }, 30000); // Auto-save every 30 seconds
+            `;
         }
 
-        // Initialize App
-        function initializeApp() {
-            loadBooks();
-            enableAutoSave();
-            
-            // Set initial word count
-            updateWordCount();
-            
-            // Load initial chapter in editor
-            updateChaptersList();
-            
-            console.log('منصة الأدب العربي جاهزة للاستخدام');
-        }
-
-        // Add CSS animation for fadeOut
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeOut {
-                from { opacity: 1; transform: translateX(-50%) translateY(0); }
-                to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        // إغلاق القوائم عند النقر خارجها
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.custom-select')) {
+                document.querySelectorAll('.select-options').forEach(opt => {
+                    opt.classList.remove('show');
+                    opt.previousElementSibling.classList.remove('open');
+                });
             }
-        `;
-        document.head.appendChild(style);
+        });
 
-        // Start the application
+        // تهيئة التطبيق عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', initializeApp);
-
-        // Handle login button
-        document.getElementById('loginBtn')?.addEventListener('click', () => {
-            showNotification('ميزة تسجيل الدخول قيد التطوير', 'info');
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey) {
-                switch(e.key) {
-                    case 's':
-                        e.preventDefault();
-                        if (appState.currentPage === 'writer') {
-                            saveCurrentChapter();
-                            showNotification('تم الحفظ', 'success');
-                        }
-                        break;
-                    case 'n':
-                        e.preventDefault();
-                        toggleNightMode();
-                        break;
-                    case 'f':
-                        e.preventDefault();
-                        searchInput?.focus();
-                        break;
-                }
-            }
-        });
-
-        // Handle back/forward browser buttons
-        window.addEventListener('popstate', (e) => {
-            if (e.state && e.state.page) {
-                showPage(e.state.page);
-            }
-        });
-
-        // Update browser history when navigating
-        const originalShowPage = showPage;
-        showPage = function(pageId) {
-            originalShowPage(pageId);
-            history.pushState({page: pageId}, '', `#${pageId}`);
-        };
-
-        // Check initial URL
-        const initialPage = window.location.hash.slice(1) || 'home';
-        if (['home', 'library', 'writer', 'profile', 'reader'].includes(initialPage)) {
-            showPage(initialPage);
-        }
     </script>
 </body>
 </html>
