@@ -1,0 +1,1 @@
+<resources><style name="Theme.Tapora" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:statusBarColor">#F6F4EF</item><item name="android:navigationBarColor">#F6F4EF</item><item name="android:windowLightStatusBar">true</item><item name="android:colorAccent">#0B806E</item></style></resources>
