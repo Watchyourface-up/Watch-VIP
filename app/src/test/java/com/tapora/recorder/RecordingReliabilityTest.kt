@@ -36,9 +36,9 @@ class RecordingReliabilityTest {
     @Test fun volumeDoublePressTriggersOnlyOnSecondFreshDownWithinWindow() {
         val detector = VolumeDoublePressDetector(android.view.KeyEvent.KEYCODE_VOLUME_UP)
         assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1000))
-        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1200))
-        assertEquals(VolumeDoublePressDetector.Result.TRIGGER_AND_CONSUME, detector.onEvent(24, 0, 0, 1300))
-        assertEquals(VolumeDoublePressDetector.Result.CONSUME, detector.onEvent(24, 1, 0, 1310))
+        assertEquals(VolumeDoublePressDetector.Result.TRIGGER_AND_CONSUME, detector.onEvent(24, 0, 0, 1200))
+        assertEquals(VolumeDoublePressDetector.Result.CONSUME, detector.onEvent(24, 1, 0, 1210))
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1300))
     }
 
     @Test fun repeatedKeyDownDoesNotTriggerAccidentally() {
