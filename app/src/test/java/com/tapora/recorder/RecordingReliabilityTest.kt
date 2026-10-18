@@ -33,20 +33,18 @@ class RecordingReliabilityTest {
         assertTrue(machine.transition(RecordingAction.Reset))
     }
 
-    @Test fun volumeDoublePressRequiresTwoDistinctUpsWithinWindow() {
-        var now = 1000L
-        val detector = VolumeDoublePressDetector(450L) { now }
-        assertFalse(detector.onVolumeUp())
-        now += 200
-        assertTrue(detector.onVolumeUp())
-        now += 451
-        assertFalse(detector.onVolumeUp())
+    @Test fun volumeDoublePressTriggersOnlyOnSecondFreshDownWithinWindow() {
+        val detector = VolumeDoublePressDetector(android.view.KeyEvent.KEYCODE_VOLUME_UP)
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1000))
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1200))
+        assertEquals(VolumeDoublePressDetector.Result.TRIGGER_AND_CONSUME, detector.onEvent(24, 0, 0, 1300))
+        assertEquals(VolumeDoublePressDetector.Result.CONSUME, detector.onEvent(24, 1, 0, 1310))
     }
 
-    @Test fun volumePressAtSameTimestampDoesNotTriggerAccidentally() {
-        var now = 1000L
-        val detector = VolumeDoublePressDetector(450L) { now }
-        detector.onVolumeUp()
-        assertFalse(detector.onVolumeUp())
+    @Test fun repeatedKeyDownDoesNotTriggerAccidentally() {
+        val detector = VolumeDoublePressDetector(android.view.KeyEvent.KEYCODE_VOLUME_UP)
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1000))
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 1, 1100))
+        assertEquals(VolumeDoublePressDetector.Result.PASS, detector.onEvent(24, 0, 0, 1200))
     }
 }

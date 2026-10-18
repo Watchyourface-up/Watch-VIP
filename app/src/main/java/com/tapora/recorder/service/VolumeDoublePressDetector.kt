@@ -1,21 +1,46 @@
 package com.tapora.recorder.service
 
-/**
- * Platform-independent detector. It only emits an intent after two UP events
- * inside the configured interval; it never starts recording itself.
- */
-class VolumeDoublePressDetector(
-    private val intervalMs: Long = 450L,
-    private val clock: () -> Long = { System.currentTimeMillis() }
+/** Deterministic key-event recognizer. PASS leaves ordinary system volume behavior untouched. */
+internal class VolumeDoublePressDetector(
+    private val targetKeyCode: Int,
+    private val doublePressWindowMs: Long = 420L
 ) {
-    private var lastUpAt: Long? = null
+    enum class Result { PASS, TRIGGER_AND_CONSUME, CONSUME }
 
-    fun onVolumeUp(): Boolean {
-        val now = clock()
-        val previous = lastUpAt
-        lastUpAt = now
-        return previous != null && now - previous in 1..intervalMs
+    private var firstDownAt = Long.MIN_VALUE
+    private var consumeFollowingUp = false
+
+    fun onEvent(keyCode: Int, action: Int, repeatCount: Int, eventTime: Long): Result {
+        if (keyCode != targetKeyCode) {
+            if (action == ACTION_DOWN && repeatCount == 0) firstDownAt = Long.MIN_VALUE
+            return Result.PASS
+        }
+        if (action == ACTION_UP && consumeFollowingUp) {
+            consumeFollowingUp = false
+            return Result.CONSUME
+        }
+        if (action != ACTION_DOWN) return Result.PASS
+        if (repeatCount > 0) {
+            firstDownAt = Long.MIN_VALUE
+            return Result.PASS
+        }
+        val previous = firstDownAt
+        if (previous != Long.MIN_VALUE && eventTime >= previous && eventTime - previous <= doublePressWindowMs) {
+            firstDownAt = Long.MIN_VALUE
+            consumeFollowingUp = true
+            return Result.TRIGGER_AND_CONSUME
+        }
+        firstDownAt = eventTime
+        return Result.PASS
     }
 
-    fun reset() { lastUpAt = null }
+    fun reset() {
+        firstDownAt = Long.MIN_VALUE
+        consumeFollowingUp = false
+    }
+
+    companion object {
+        const val ACTION_DOWN = 0
+        const val ACTION_UP = 1
+    }
 }

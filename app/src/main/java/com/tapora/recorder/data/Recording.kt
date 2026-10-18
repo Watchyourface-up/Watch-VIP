@@ -22,7 +22,6 @@ interface RecordingDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun insert(recording: Recording)
     @Query("UPDATE recordings SET title = :title WHERE id = :id") suspend fun rename(id: String, title: String)
     @Query("DELETE FROM recordings WHERE id = :id") suspend fun delete(id: String)
-    @Query("DELETE FROM recordings WHERE id = :id") suspend fun deleteMissing(id: String) = delete(id)
 }
 
 @Database(entities = [Recording::class], version = 2, exportSchema = false)

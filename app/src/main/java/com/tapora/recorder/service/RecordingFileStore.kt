@@ -22,5 +22,10 @@ class RecordingFileStore(private val root: File) {
         return target
     }
 
+    fun removePendingFiles() {
+        if (!root.exists()) return
+        root.listFiles { file -> file.name.endsWith(".m4a.part") }?.forEach { it.delete() }
+    }
+
     fun discard(file: File?) { if (file != null) file.delete() }
 }
