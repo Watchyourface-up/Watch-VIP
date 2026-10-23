@@ -22,7 +22,7 @@ export default function App(){
 
  const refresh=async(r:LinkRepository)=>setLinks(await r.list());
  useEffect(()=>{let alive=true;(async()=>{try{await initializeSecurity();const r=await createRepository();if(alive){setRepo(r);setUnlocked(false);}}catch(e){if(alive)Alert.alert(t.storageError,t.storageErrorBody);}finally{if(alive)setLoading(false);}})();return()=>{alive=false;}},[]);
- useEffect(()=>{const sub=AppState.addEventListener('change',state=>{if(state==='background'||state==='inactive'){markBackgrounded();setUnlocked(false);setLinks([]);setQuery('');setForm(false);setTitle('');setUrl('');setDescription('');setEditing(null);}});return()=>sub.remove();},[]);
+ useEffect(()=>{let backgroundAt:number|null=null;const sub=AppState.addEventListener('change',state=>{if(state==='background'){backgroundAt=Date.now();setUnlocked(false);setLinks([]);setQuery('');setForm(false);setTitle('');setUrl('');setDescription('');setEditing(null);}else if(state==='active'&&backgroundAt!==null){markBackgrounded(backgroundAt);backgroundAt=null;}});return()=>sub.remove();},[]);
  const filtered=useMemo(()=>{const q=query.trim().toLocaleLowerCase();return links.filter(x=>category==='all'||x.category===category).filter(x=>!favoriteOnly||x.favorite).filter(x=>!q||[x.title,x.url,x.description??''].some(v=>v.toLocaleLowerCase().includes(q))).sort((a,b)=>Number(b.favorite)-Number(a.favorite)||b.updatedAt-a.updatedAt)},[links,query,category,favoriteOnly]);
  function resetForm(){setTitle('');setUrl('');setDescription('');setFormCategory('docs');setEditing(null);setForm(false);}
  function beginEdit(item:LinkRecord){setEditing(item.id);setTitle(item.title);setUrl(item.url);setDescription(item.description??'');setFormCategory(item.category);setForm(true);}
