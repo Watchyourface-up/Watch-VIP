@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "jest --runInBand --config jest.config.js",
-    "prebuild": "expo prebuild"
+    "prebuild": "expo prebuild",
+    "audit": "npm audit --omit=dev",
+    "validate:schema": "python tools/validate_schema.py"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
