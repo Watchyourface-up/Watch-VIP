@@ -17,8 +17,7 @@
     "build:android": "npx expo prebuild --platform android && npx expo run:android",
     "build:ios": "npx expo prebuild --platform ios && npx expo run:ios",
     "security:source": "python tools/check_secrets.py && python tools/validate_schema.py",
-    "test:ci": "npm run typecheck && npm test && npm run lint && npm run security:source",
-    "lockfile:check": "node scripts/check-lockfile.js"
+    "test:ci": "npm run typecheck && npm test && npm run lint && npm run security:source"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
