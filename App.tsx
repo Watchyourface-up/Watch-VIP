@@ -7,7 +7,7 @@ import {StatusBar as ExpoStatusBar} from 'expo-status-bar';
 import {LinkRecord,LinkCategory} from './src/domain/link';
 import {detectSensitiveUrl,normalizeHttpUrl} from './src/domain/urlPolicy';
 import {createRepository,LinkRepository} from './src/storage/repository';
-import {initializeSecurity,lockGate,markBackgrounded,shouldLockOnResume} from './src/security/session';
+import {initializeSecurity,lockGate,markBackgrounded} from './src/security/session';
 
 const C={bg:'#101416',surface:'#1A2224',card:'#202A2C',border:'#2B3A3C',text:'#F1F7F6',muted:'#94A6A7',teal:'#4DE0C1',tealDark:'#173C38',danger:'#FF8E8E',gold:'#F6C978'};
 const cats:{id:LinkCategory;label:string;icon:keyof typeof Ionicons.glyphMap}[]=[{id:'all',label:'الكل',icon:'grid-outline'},{id:'docs',label:'التوثيق',icon:'book-outline'},{id:'tools',label:'الأدوات',icon:'construct-outline'},{id:'projects',label:'المشاريع',icon:'code-slash-outline'},{id:'references',label:'المراجع',icon:'library-outline'}];
