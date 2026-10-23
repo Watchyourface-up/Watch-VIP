@@ -11,5 +11,5 @@ export function validateLinkDraft(draft:LinkDraft,existing?:LinkRecord,now=Date.
  const checked=normalizeHttpUrl(draft.url);
  if(!checked.ok)return {ok:false,field:'url',message:checked.message};
  const finalTitle=title||new URL(checked.value).hostname;
- return {ok:true,record:{id:existing?.id??'link-'+now.toString(36),title:finalTitle,url:checked.value,description,category:draft.category,color:draft.color??existing?.color??'#4DE0C1',favorite:existing?.favorite??false,createdAt:existing?.createdAt??now,updatedAt:now}};
+ return {ok:true,record:{id:existing?.id??'link-'+now.toString(36),title:finalTitle,url:checked.value,description,category:draft.category as Exclude<LinkCategory,'all'>,color:draft.color??existing?.color??'#4DE0C1',favorite:existing?.favorite??false,createdAt:existing?.createdAt??now,updatedAt:now}};
 }
