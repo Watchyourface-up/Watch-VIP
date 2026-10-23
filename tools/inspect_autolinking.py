@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Validate publication metadata emitted by Expo Android autolinking.
+"""Validate Expo Android autolinking JSON against the Gradle Publication schema.
 
 Usage:
   npx expo-modules-autolinking resolve --platform android --json > /tmp/devvault-autolinking.json
   python tools/inspect_autolinking.py /tmp/devvault-autolinking.json
 
-This diagnostic is deliberately read-only. It reports malformed metadata and never
-manufactures publication fields or edits installed packages.
+The Gradle plugin consumes the JSON emitted by this command. The expected serialized
+publication keys are groupId, artifactId, version and repository. This tool is
+read-only; it never fabricates publication metadata or edits installed packages.
 """
 from __future__ import annotations
 
@@ -15,9 +16,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-# Expo Gradle's serialized Publication type uses groupId/artifactId, while the
-# TypeScript autolinking schema uses group/id. Resolve JSON is serialized from the
-# TypeScript shape, so inspect the actual keys returned by this command.
 REQUIRED_PUBLICATION_FIELDS = ("groupId", "artifactId", "version", "repository")
 
 
