@@ -26,6 +26,9 @@ async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
     if (keyState === 'missing-after-initialization') {
       throw new Error('DATABASE_KEY_UNAVAILABLE');
     }
+    if (keyState === 'invalid-existing-key') {
+      throw new Error('INVALID_KEY_MATERIAL');
+    }
     if (keyState === 'create-first-key') {
       const random = await Crypto.getRandomBytesAsync(32);
       key = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
