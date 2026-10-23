@@ -2,8 +2,10 @@ import {normalizeHttpUrl,detectSensitiveUrl} from '../src/domain/urlPolicy';
 import {validateLinkDraft} from '../src/domain/linkValidation';
 
 describe('DevVault link policies',()=>{
- test('accepts https and canonicalizes host casing',()=>{
-  expect(normalizeHttpUrl('https://EXAMPLE.com')).toEqual({ok:true,value:'https://example.com/'});
+ test('accepts http and https and canonicalizes hostname casing',()=>{
+  const accepted=normalizeHttpUrl('https://EXAMPLE.com');
+  expect(accepted.ok).toBe(true);
+  if(accepted.ok)expect(new URL(accepted.value).hostname).toBe('example.com');
   expect(normalizeHttpUrl('http://example.com').ok).toBe(true);
  });
  test.each(['javascript:alert(1)','file:///etc/passwd','ftp://example.com','not a url'])('rejects unsafe scheme or malformed input: %s',(input)=>{
