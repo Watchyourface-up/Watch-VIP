@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Inspect Expo Android autolinking JSON and fail with precise publication diagnostics.
+"""Validate publication metadata emitted by Expo Android autolinking.
 
-Run after npm install and before the Gradle settings plugin consumes the JSON:
+Usage:
   npx expo-modules-autolinking resolve --platform android --json > /tmp/devvault-autolinking.json
   python tools/inspect_autolinking.py /tmp/devvault-autolinking.json
 
-This is a diagnostic guard, not a metadata repair. It never fabricates publication
-versions or mutates dependency files.
+This diagnostic is deliberately read-only. It reports malformed metadata and never
+manufactures publication fields or edits installed packages.
 """
 from __future__ import annotations
 
@@ -15,7 +15,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-REQUIRED_PUBLICATION_FIELDS = ("group", "id", "version", "repository")
+# Expo Gradle's serialized Publication type uses groupId/artifactId, while the
+# TypeScript autolinking schema uses group/id. Resolve JSON is serialized from the
+# TypeScript shape, so inspect the actual keys returned by this command.
+REQUIRED_PUBLICATION_FIELDS = ("groupId", "artifactId", "version", "repository")
 
 
 def inspect(payload: Any) -> list[str]:
@@ -53,8 +56,10 @@ def inspect(payload: Any) -> list[str]:
                     "must be an object when present."
                 )
                 continue
-            missing = [key for key in REQUIRED_PUBLICATION_FIELDS
-                       if not isinstance(publication.get(key), str) or not publication[key].strip()]
+            missing = [
+                key for key in REQUIRED_PUBLICATION_FIELDS
+                if not isinstance(publication.get(key), str) or not publication[key].strip()
+            ]
             if missing:
                 safe_publication = {
                     key: value for key, value in publication.items()
