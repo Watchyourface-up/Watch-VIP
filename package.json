@@ -9,7 +9,7 @@
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --config jest.config.js",
     "prebuild": "expo prebuild"
   },
   "dependencies": {
