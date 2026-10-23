@@ -2,9 +2,11 @@ import * as SQLite from 'expo-sqlite';
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
 import { LinkRecord } from '../domain/link';
+import { decideDatabaseKeyState } from '../security/keyLifecycle';
 
 const DB_NAME = 'devvault.db';
 const KEY_NAME = 'devvault.sqlcipher.key.v1';
+const KEY_INITIALIZED_MARKER = 'devvault.sqlcipher.key.initialized.v1';
 const SCHEMA_VERSION = 1;
 let connection: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -12,14 +14,27 @@ async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
   if (!await SecureStore.isAvailableAsync()) throw new Error('SECURE_STORE_UNAVAILABLE');
 
   let key = await SecureStore.getItemAsync(KEY_NAME);
-  if (!key) {
+  const initializedMarker = await SecureStore.getItemAsync(KEY_INITIALIZED_MARKER);
+  const keyState = decideDatabaseKeyState(key, initializedMarker);
+  if (keyState === 'missing-after-initialization') {
+    // Do not replace a lost/invalidated database key: doing so would make existing data unrecoverable.
+    throw new Error('DATABASE_KEY_UNAVAILABLE');
+  }
+  if (keyState === 'create-first-key') {
     const random = await Crypto.getRandomBytesAsync(32);
     key = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
     await SecureStore.setItemAsync(KEY_NAME, key, {
       keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
     });
   }
-  if (!/^[a-f0-9]{64}$/.test(key)) throw new Error('INVALID_KEY_MATERIAL');
+  if (!key || !/^[a-f0-9]{64}$/.test(key)) throw new Error('INVALID_KEY_MATERIAL');
+  // Write the marker only after a key has been successfully persisted. Existing keys without the marker
+  // are upgraded without replacement, preserving compatibility with earlier app versions.
+  if (initializedMarker !== '1') {
+    await SecureStore.setItemAsync(KEY_INITIALIZED_MARKER, '1', {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+    });
+  }
 
   const database = await SQLite.openDatabaseAsync(DB_NAME);
   try {
