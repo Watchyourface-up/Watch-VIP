@@ -1,5 +1,5 @@
 export type UrlValidation = { ok: true; value: string } | { ok: false; message: string };
-const CONTROL_OR_SPACE = /[\\u0000-\\u0020\\u007f]/;
+const CONTROL_OR_SPACE = /[\u0000-\u0020\u007f]/;
 const SENSITIVE_PARAMETER = /^(?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|api[_-]?key|apikey|client[_-]?secret|password|passwd|authorization|auth|session|jwt|sig|signature|code|key)$/i;
 
 export function normalizeHttpUrl(input: string): UrlValidation {
