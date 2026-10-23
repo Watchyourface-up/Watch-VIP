@@ -30,7 +30,8 @@
     "react-native": "0.81.5",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-url-polyfill": "^2.0.0",
-    "expo-crypto": "~15.0.7"
+    "expo-crypto": "~15.0.7",
+    "expo-screen-capture": "~8.0.9"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
