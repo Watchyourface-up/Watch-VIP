@@ -10,7 +10,8 @@
 - [ ] Verify `PRAGMA cipher_version` is non-empty in the native binary.
 - [ ] Verify a database created with a key cannot be opened with a different key.
 - [ ] Verify the database file is not plaintext and run SQLCipher integrity checks.
-- [ ] Test a missing/corrupt SecureStore key and database-open failure; ensure the app does not silently replace keys or delete the database.
+- [x] Source code has a separate initialized-key marker and refuses to generate a replacement key if a previously initialized key is missing.
+- [ ] Test a missing/corrupt SecureStore key and database-open failure on native builds; ensure no keys are replaced and no database is deleted.
 - [ ] Consider moving key application into native startup/database configuration if the Expo SQLite open lifecycle cannot guarantee the key is applied before any database page access.
 
 ## Authentication and privacy
