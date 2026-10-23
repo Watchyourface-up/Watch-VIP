@@ -13,42 +13,42 @@ SPEC.loader.exec_module(inspector)
 
 
 class InspectAutolinkingTests(unittest.TestCase):
-    def test_valid_publication_passes(self) -> None:
+    def test_valid_expo_publication_passes(self) -> None:
         payload = {
             "modules": [{
-                "packageName": "example-module",
-                "packageVersion": "1.2.3",
+                "packageName": "expo-font",
+                "packageVersion": "14.0.12",
                 "projects": [{
-                    "name": "example-module",
+                    "name": "expo-font",
                     "publication": {
-                        "group": "org.example",
-                        "id": "example-module",
-                        "version": "1.2.3",
-                        "repository": "maven",
+                        "groupId": "host.exp.exponent",
+                        "artifactId": "expo.modules.font",
+                        "version": "14.0.12",
+                        "repository": "local-maven-repo",
                     },
                 }],
             }]
         }
         self.assertEqual(inspector.inspect(payload), [])
 
-    def test_missing_publication_version_names_module_and_field(self) -> None:
+    def test_missing_publication_version_names_exact_module_and_field(self) -> None:
         payload = {
             "modules": [{
-                "packageName": "broken-module",
-                "packageVersion": "2.0.0",
+                "packageName": "expo-font",
+                "packageVersion": "58.0.9",
                 "projects": [{
-                    "name": "broken-project",
+                    "name": "expo-font",
                     "publication": {
-                        "group": "org.example",
-                        "id": "broken",
-                        "repository": "maven",
+                        "groupId": "host.exp.exponent",
+                        "artifactId": "expo.modules.font",
+                        "repository": "local-maven-repo",
                     },
                 }],
             }]
         }
         issues = inspector.inspect(payload)
         self.assertEqual(len(issues), 1)
-        self.assertIn("broken-module@2.0.0", issues[0])
+        self.assertIn("modules[0] (expo-font@58.0.9)", issues[0])
         self.assertIn("'version'", issues[0])
 
     def test_null_publication_is_allowed(self) -> None:
