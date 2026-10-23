@@ -1,4 +1,5 @@
 import {findDuplicateLink, validateLinkDraft} from '../src/domain/linkValidation';
+import {sortLinks} from '../src/domain/link';
 
 describe('link draft validation', () => {
   const draft = {title: ' TS Docs ', url: 'https://www.typescriptlang.org/docs', description: ' official docs ', category: 'docs' as const};
@@ -38,4 +39,17 @@ describe('link draft validation', () => {
     expect(findDuplicateLink('https://example.com/docs', saved, 'one')).toBeUndefined();
     expect(findDuplicateLink('https://example.com/docs?lang=en', saved)).toBeUndefined();
   });
+  it('sorts links by name, creation time, update time, or favorites without mutating input', () => {
+    const items = [
+      {id: 'b', title: 'Beta', favorite: true, createdAt: 10, updatedAt: 30},
+      {id: 'a', title: 'alpha', favorite: false, createdAt: 30, updatedAt: 10},
+      {id: 'c', title: 'Charlie', favorite: false, createdAt: 20, updatedAt: 20},
+    ];
+    expect(sortLinks(items, 'name').map(x => x.id)).toEqual(['a', 'b', 'c']);
+    expect(sortLinks(items, 'created').map(x => x.id)).toEqual(['a', 'c', 'b']);
+    expect(sortLinks(items, 'updated').map(x => x.id)).toEqual(['b', 'c', 'a']);
+    expect(sortLinks(items, 'favorites').map(x => x.id)).toEqual(['b', 'c', 'a']);
+    expect(items.map(x => x.id)).toEqual(['b', 'a', 'c']);
+  });
+
 });
