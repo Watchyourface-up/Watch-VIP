@@ -47,6 +47,9 @@ jobs:
       - run: npm install
       - name: Check Expo dependency compatibility
         run: npx expo install --check
+      - name: Print resolved Expo dependency versions
+        run: |
+          node -e "for (const p of ['expo','react-native','expo-font','expo-asset','expo-sqlite','expo-secure-store','expo-local-authentication','expo-screen-capture','expo-crypto']) { try { const j=require(p+'/package.json'); console.log(p+'='+j.version) } catch(e) { console.log(p+': not directly resolvable') } }"
       - name: Generate Android native project
         run: npx expo prebuild --platform android --no-install
       - name: Resolve and validate Expo Android autolinking metadata
