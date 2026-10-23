@@ -22,6 +22,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: npm install
+      - name: Validate npm lockfile
+        run: npm run lockfile:check
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
@@ -45,6 +47,8 @@ jobs:
           distribution: temurin
           java-version: "17"
       - run: npm install
+      - name: Validate npm lockfile
+        run: npm run lockfile:check
       - name: Check Expo dependency compatibility
         run: npx expo install --check
       - name: Print resolved Expo dependency versions
