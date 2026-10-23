@@ -20,6 +20,7 @@ export default function App(){
  const t=translations[language];
  const rtl=language==='ar';
  const cats=categoryIcons.map(x=>({...x,label:translations[language][x.id]}));
+ const cats=categoryIcons.map(x=>({...x,label:translations[language][x.id]}));
  const refresh=async(r:LinkRepository)=>setLinks(await r.list());
  useEffect(()=>{let alive=true;(async()=>{try{await initializeSecurity();const r=await createRepository();if(alive){setRepo(r);setUnlocked(false);}}catch(e){if(alive)Alert.alert(t.storageError,t.storageErrorBody);}finally{if(alive)setLoading(false);}})();return()=>{alive=false;}},[]);
  useEffect(()=>{const sub=AppState.addEventListener('change',state=>{if(state==='background'||state==='inactive'){markBackgrounded();setUnlocked(false);setLinks([]);setQuery('');setForm(false);}});return()=>sub.remove();},[]);
