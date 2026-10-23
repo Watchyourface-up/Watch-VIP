@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [main, "dev/**"]
+    branches: [main, "dev/**", "fix/**"]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -35,13 +35,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
       - run: npm install
+      - name: Check Expo dependency compatibility
+        run: npx expo install --check
       - name: Generate Android native project
         run: npx expo prebuild --platform android --no-install
+      - name: Resolve and validate Expo Android autolinking metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx expo-modules-autolinking resolve --platform android --json > "$RUNNER_TEMP/devvault-autolinking.json"
+          python tools/inspect_autolinking.py "$RUNNER_TEMP/devvault-autolinking.json"
       - name: Build debug APK
         run: cd android && ./gradlew --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
