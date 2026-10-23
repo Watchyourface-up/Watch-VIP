@@ -10,6 +10,7 @@ export function normalizeHttpUrl(input:string):UrlValidation{
  if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')return {ok:false,message:'يُسمح بروابط HTTP وHTTPS فقط.'};
  if(!parsed.hostname||parsed.hostname.startsWith('.')||parsed.hostname.endsWith('.'))return {ok:false,message:'اسم المضيف غير صالح.'};
  if(parsed.username||parsed.password)return {ok:false,message:'لا تحفظ بيانات دخول مضمّنة داخل الرابط.'};
+ parsed.hostname=parsed.hostname.toLowerCase();
  return {ok:true,value:parsed.toString()};
 }
 export function detectSensitiveUrl(value:string):boolean{
