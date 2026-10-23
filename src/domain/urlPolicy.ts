@@ -1,5 +1,5 @@
 export type UrlValidation = {ok:true;value:string}|{ok:false;message:string};
-const CONTROL_OR_SPACE=/[\\u0000-\\u0020\\u007f]/;
+const CONTROL_OR_SPACE = /[\u0000-\u0020\u007f]/;
 const SENSITIVE=/(?:access[_-]?token|refresh[_-]?token|id[_-]?token|token|api[_-]?key|apikey|client[_-]?secret|password|passwd|authorization|auth|session|jwt|sig|signature|code)/i;
 export function normalizeHttpUrl(input:string):UrlValidation { const candidate=input.trim(); if(!candidate)return {ok:false,message:'أدخل عنوان رابط أولًا.'}; if(CONTROL_OR_SPACE.test(candidate))return {ok:false,message:'يحتوي الرابط على مسافات أو محارف غير مسموحة.'}; let parsed:URL; try{parsed=new URL(candidate)}catch{return {ok:false,message:'صيغة الرابط غير صحيحة. استخدم رابطًا كاملًا مثل https://example.com.'}} if(parsed.protocol!=='https:'&&parsed.protocol!=='http:')return {ok:false,message:'يُسمح بروابط HTTP وHTTPS فقط.'}; if(!parsed.hostname)return {ok:false,message:'يجب أن يحتوي الرابط على اسم مضيف صالح.'}; if(parsed.username||parsed.password)return {ok:false,message:'لا يُسمح ببيانات دخول مضمّنة داخل الرابط.'}; return {ok:true,value:parsed.toString()}; }
 export function detectSensitiveUrl(value:string):boolean { try { const u=new URL(value); if(u.username||u.password)return true; for(const key of u.searchParams.keys())if(SENSITIVE.test(key))return true; return false; }catch{return false;} }
