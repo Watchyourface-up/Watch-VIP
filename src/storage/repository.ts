@@ -28,10 +28,10 @@ async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
     const cipher = await database.getFirstAsync<{ cipher_version: string }>('PRAGMA cipher_version');
     if (!cipher?.cipher_version) throw new Error('SQLCIPHER_UNAVAILABLE');
 
-    await database.execAsync(\`PRAGMA key = "x'\${key}'";\`);
+    await database.execAsync(`PRAGMA key = "x'${key}'";`);
     // Forces the first database page to be read using the provided key.
     await database.getFirstAsync('SELECT count(*) AS count FROM sqlite_master');
-    await database.execAsync(\`
+    await database.execAsync(`
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS schema_migrations (
         version INTEGER PRIMARY KEY NOT NULL,
@@ -50,7 +50,7 @@ async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
       );
       CREATE INDEX IF NOT EXISTS idx_links_category ON links(category);
       CREATE INDEX IF NOT EXISTS idx_links_favorite_updated ON links(favorite, updated_at DESC);
-    \`);
+    `);
     await database.withTransactionAsync(async () => {
       const current = await database.getFirstAsync<{ version: number | null }>(
         'SELECT MAX(version) AS version FROM schema_migrations'
