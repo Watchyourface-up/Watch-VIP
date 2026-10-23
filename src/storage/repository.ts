@@ -13,39 +13,44 @@ let connection: Promise<SQLite.SQLiteDatabase> | null = null;
 async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
   if (!await SecureStore.isAvailableAsync()) throw new Error('SECURE_STORE_UNAVAILABLE');
 
-  let key = await SecureStore.getItemAsync(KEY_NAME);
-  const initializedMarker = await SecureStore.getItemAsync(KEY_INITIALIZED_MARKER);
-  const keyState = decideDatabaseKeyState(key, initializedMarker);
-  if (keyState === 'missing-after-initialization') {
-    // Do not replace a lost/invalidated database key: doing so would make existing data unrecoverable.
-    throw new Error('DATABASE_KEY_UNAVAILABLE');
-  }
-  if (keyState === 'create-first-key') {
-    const random = await Crypto.getRandomBytesAsync(32);
-    key = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
-    await SecureStore.setItemAsync(KEY_NAME, key, {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
-    });
-  }
-  if (!key || !/^[a-f0-9]{64}$/.test(key)) throw new Error('INVALID_KEY_MATERIAL');
-  // Write the marker only after a key has been successfully persisted. Existing keys without the marker
-  // are upgraded without replacement, preserving compatibility with earlier app versions.
-  if (initializedMarker !== '1') {
-    await SecureStore.setItemAsync(KEY_INITIALIZED_MARKER, '1', {
-      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
-    });
-  }
-
   const database = await SQLite.openDatabaseAsync(DB_NAME);
   try {
-    // expo-sqlite applies this pragma in the native SQLCipher build.
-    // Refuse to continue when the cipher extension is absent.
+    // The app must never continue on ordinary SQLite. Check the native extension before creating or
+    // persisting a new key, so unsupported runtimes cannot poison first-launch key state.
     const cipher = await database.getFirstAsync<{ cipher_version: string }>('PRAGMA cipher_version');
     if (!cipher?.cipher_version) throw new Error('SQLCIPHER_UNAVAILABLE');
 
+    let key = await SecureStore.getItemAsync(KEY_NAME);
+    const initializedMarker = await SecureStore.getItemAsync(KEY_INITIALIZED_MARKER);
+    const keyState = decideDatabaseKeyState(key, initializedMarker);
+    if (keyState === 'missing-after-initialization') {
+      throw new Error('DATABASE_KEY_UNAVAILABLE');
+    }
+    if (keyState === 'create-first-key') {
+      const random = await Crypto.getRandomBytesAsync(32);
+      key = Array.from(random, byte => byte.toString(16).padStart(2, '0')).join('');
+      await SecureStore.setItemAsync(KEY_NAME, key, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+      });
+    }
+    if (!key || !/^[a-f0-9]{64}$/.test(key)) throw new Error('INVALID_KEY_MATERIAL');
+
+    // Mark initialization only after the key has been persisted. An existing key from an older
+    // app version is preserved and marked, never replaced.
+    if (initializedMarker !== '1') {
+      await SecureStore.setItemAsync(KEY_INITIALIZED_MARKER, '1', {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+      });
+    }
+
     await database.execAsync(`PRAGMA key = "x'${key}'";`);
-    // Forces the first database page to be read using the provided key.
-    await database.getFirstAsync('SELECT count(*) AS count FROM sqlite_master');
+    try {
+      // Force a page read with the key before any schema access or migration.
+      await database.getFirstAsync('SELECT count(*) AS count FROM sqlite_master');
+    } catch {
+      throw new Error('DATABASE_AUTHENTICATION_FAILED');
+    }
+
     await database.execAsync(`
       PRAGMA foreign_keys = ON;
       CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -79,7 +84,7 @@ async function openEncrypted(): Promise<SQLite.SQLiteDatabase> {
     });
     return database;
   } catch (error) {
-    await database.closeAsync();
+    try { await database.closeAsync(); } catch { /* Preserve the original initialization error. */ }
     throw error;
   }
 }
