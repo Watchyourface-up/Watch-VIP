@@ -12,7 +12,10 @@
     "test": "jest --runInBand --config jest.config.js",
     "prebuild": "expo prebuild",
     "audit": "npm audit --omit=dev",
-    "validate:schema": "python tools/validate_schema.py"
+    "validate:schema": "python tools/validate_schema.py",
+    "audit:full": "npm audit",
+    "build:android": "npx expo prebuild --platform android && npx expo run:android",
+    "build:ios": "npx expo prebuild --platform ios && npx expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
