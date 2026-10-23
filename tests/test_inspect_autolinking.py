@@ -13,7 +13,7 @@ SPEC.loader.exec_module(inspector)
 
 
 class InspectAutolinkingTests(unittest.TestCase):
-    def test_valid_expo_publication_passes(self) -> None:
+    def test_valid_gradle_publication_passes(self) -> None:
         payload = {
             "modules": [{
                 "packageName": "expo-font",
