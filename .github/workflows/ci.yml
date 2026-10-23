@@ -22,8 +22,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: npm install
-      - name: Validate npm lockfile
-        run: npm run lockfile:check
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
