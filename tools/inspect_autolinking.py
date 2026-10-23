@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Validate Expo Android autolinking publication metadata.
+"""Inspect Expo Android autolinking publication metadata.
 
-Expo CLI resolves publications using the TypeScript schema (group, id, version,
-repository). Expo Gradle consumes the same output as groupId, artifactId, version,
-repository. This tool validates both forms and can normalize the TS form when
-creating a Gradle-compatible JSON input. It never invents a publication version.
+The Gradle settings plugin decodes the result of:
+  expo-modules-autolinking resolve --platform android --json
+
+The script reports each module/project and the publication keys that are present.
+It is a read-only diagnostic: it never adds a guessed publication version.
 """
 from __future__ import annotations
 
@@ -13,25 +14,20 @@ import sys
 from pathlib import Path
 from typing import Any
 
-
-def normalize_publication(publication: dict[str, Any]) -> dict[str, Any]:
-    """Map the Expo Autolinking TypeScript shape to Gradle's serialized shape."""
-    normalized = dict(publication)
-    if "groupId" not in normalized and isinstance(normalized.get("group"), str):
-        normalized["groupId"] = normalized["group"]
-    if "artifactId" not in normalized and isinstance(normalized.get("id"), str):
-        normalized["artifactId"] = normalized["id"]
-    return normalized
+# Expo's TS and Gradle schemas use different serialized names in SDK 54.
+# Report missing properties based on the shape that Gradle expects.
+REQUIRED_FIELDS = ("groupId", "artifactId", "version", "repository")
+FIELD_ALIASES = {"groupId": "group", "artifactId": "id"}
 
 
 def inspect(payload: Any) -> list[str]:
-    issues: list[str] = []
     if not isinstance(payload, dict):
         return ["Autolinking output root must be a JSON object."]
     modules = payload.get("modules")
     if not isinstance(modules, list):
         return ["Autolinking output has no modules array."]
 
+    issues: list[str] = []
     for module_index, module in enumerate(modules):
         if not isinstance(module, dict):
             issues.append(f"modules[{module_index}] is not an object.")
@@ -59,11 +55,12 @@ def inspect(payload: Any) -> list[str]:
                 )
                 continue
 
-            normalized = normalize_publication(publication)
-            missing = [
-                key for key in ("groupId", "artifactId", "version", "repository")
-                if not isinstance(normalized.get(key), str) or not normalized[key].strip()
-            ]
+            missing = []
+            for field in REQUIRED_FIELDS:
+                value = publication.get(field, publication.get(FIELD_ALIASES.get(field, "")))
+                if not isinstance(value, str) or not value.strip():
+                    missing.append(field)
+
             if missing:
                 safe_publication = {
                     key: value for key, value in publication.items()
@@ -71,8 +68,8 @@ def inspect(payload: Any) -> list[str]:
                 }
                 issues.append(
                     f"modules[{module_index}] ({package}@{package_version}).projects[{project_index}] "
-                    f"name={project.get('name', '<unnamed>')!r}: publication missing/empty "
-                    f"Gradle fields {missing}; observed publication={json.dumps(safe_publication, sort_keys=True)}"
+                    f"name={project.get('name', '<unnamed>')!r}: publication missing/empty fields {missing}; "
+                    f"observed publication={json.dumps(safe_publication, sort_keys=True)}"
                 )
     return issues
 
