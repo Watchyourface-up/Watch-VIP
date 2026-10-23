@@ -13,25 +13,25 @@ SPEC.loader.exec_module(inspector)
 
 
 class InspectAutolinkingTests(unittest.TestCase):
-    def test_valid_gradle_publication_passes(self) -> None:
-        payload = {
-            "modules": [{
-                "packageName": "expo-font",
-                "packageVersion": "14.0.12",
-                "projects": [{
-                    "name": "expo-font",
-                    "publication": {
-                        "groupId": "host.exp.exponent",
-                        "artifactId": "expo.modules.font",
-                        "version": "14.0.12",
-                        "repository": "local-maven-repo",
-                    },
-                }],
-            }]
+    def test_typescript_publication_fields_normalize_to_gradle_fields(self) -> None:
+        original = {
+            "group": "host.exp.exponent",
+            "id": "expo.modules.font",
+            "version": "14.0.12",
+            "repository": "local-maven-repo",
         }
-        self.assertEqual(inspector.inspect(payload), [])
+        normalized = inspector.normalize_publication(original)
+        self.assertEqual(normalized["groupId"], "host.exp.exponent")
+        self.assertEqual(normalized["artifactId"], "expo.modules.font")
+        self.assertEqual(normalized["version"], "14.0.12")
+        self.assertEqual(original, {
+            "group": "host.exp.exponent",
+            "id": "expo.modules.font",
+            "version": "14.0.12",
+            "repository": "local-maven-repo",
+        })
 
-    def test_missing_publication_version_names_exact_module_and_field(self) -> None:
+    def test_missing_version_names_exact_module_and_field(self) -> None:
         payload = {
             "modules": [{
                 "packageName": "expo-font",
