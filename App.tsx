@@ -18,8 +18,7 @@ export default function App(){
  const [repo,setRepo]=useState<LinkRepository|null>(null),[links,setLinks]=useState<LinkRecord[]>([]),[query,setQuery]=useState(''),[category,setCategory]=useState<LinkCategory>('all'),[favoriteOnly,setFavoriteOnly]=useState(false),[unlocked,setUnlocked]=useState(false),[loading,setLoading]=useState(true),[form,setForm]=useState(false),[editing,setEditing]=useState<string|null>(null);
  const [title,setTitle]=useState(''),[url,setUrl]=useState(''),[description,setDescription]=useState(''),[formCategory,setFormCategory]=useState<Exclude<LinkCategory,'all'>>('docs'),[language,setLanguage]=useState<Language>('ar');
  const t=translations[language];
- const rtl=language==='ar';
- const cats=categoryIcons.map(x=>({...x,label:t[x.id]}));
+  const cats=categoryIcons.map(x=>({...x,label:t[x.id]}));
 
  const refresh=async(r:LinkRepository)=>setLinks(await r.list());
  useEffect(()=>{let alive=true;(async()=>{try{await initializeSecurity();const r=await createRepository();if(alive){setRepo(r);setUnlocked(false);}}catch(e){if(alive)Alert.alert(t.storageError,t.storageErrorBody);}finally{if(alive)setLoading(false);}})();return()=>{alive=false;}},[]);
