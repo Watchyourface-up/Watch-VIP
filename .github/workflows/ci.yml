@@ -27,6 +27,8 @@ jobs:
       - run: npm run lint
       - run: python tools/validate_schema.py
       - run: python tools/check_secrets.py
+      - name: Test Expo autolinking diagnostic
+        run: python -m unittest tests/test_inspect_autolinking.py
 
   android-native-build:
     runs-on: ubuntu-latest
