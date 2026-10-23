@@ -1,4 +1,0 @@
-<resources>
-    <string name="volume_shortcut_service_label">اختصار زر رفع الصوت في TAPORA</string>
-    <string name="volume_shortcut_service_description">تستخدم TAPORA هذه الخدمة، بعد موافقتك، لاكتشاف ضغطتين متتاليتين على زر رفع الصوت لبدء التسجيل أو إيقافه. تقتصر الخدمة على ضغطات الزر، ولا تقرأ محتوى الشاشة. لا يبدأ التسجيل إلا عند طلبه، ويظل إشعار واضح ومؤشر الميكروفون ظاهرين أثناء التسجيل.</string>
-</resources>
