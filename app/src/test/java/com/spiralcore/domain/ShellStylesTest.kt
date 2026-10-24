@@ -11,14 +11,18 @@ class ShellStylesTest {
     }
 
     @Test
-    fun styleUsesSupportedPaletteAndScale() {
+    fun styleUsesSupportedPaletteAndBoundedDrawingValues() {
         val style = ShellStyles.fromSeed(-173)
         assertTrue(style.paletteIndex in 0..5)
-        assertTrue(style.scale in 0.9f..1.1f)
+        assertTrue(style.rotationDegrees >= 0f && style.rotationDegrees < 360f)
+        assertTrue(style.scale in 0.88f..1.12f)
+        assertTrue(style.widthFactor in 0.88f..1.12f)
+        assertTrue(style.heightFactor in 0.88f..1.12f)
+        assertTrue(style.spiralFactor in 0.78f..1.18f)
     }
 
     @Test
-    fun differentSeedsCanProduceDifferentShells() {
-        assertTrue(ShellStyles.fromSeed(1) != ShellStyles.fromSeed(2))
+    fun seedsSeparatedByOldStylePeriodProduceDifferentShells() {
+        assertTrue(ShellStyles.fromSeed(1) != ShellStyles.fromSeed(211))
     }
 }

@@ -25,8 +25,18 @@ jobs:
       - name: Accept licenses and install Android SDK components
         shell: bash
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+          SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK_DIR/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          if [[ -z "$SDKMANAGER" ]]; then
+            echo "sdkmanager not found under $SDK_DIR/cmdline-tools" >&2
+            exit 1
+          fi
+          echo "ANDROID_HOME=$SDK_DIR" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_DIR" >> "$GITHUB_ENV"
+          set +o pipefail
+          yes | "$SDKMANAGER" --licenses
+          set -o pipefail
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
