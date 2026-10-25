@@ -26,13 +26,16 @@ class LinkRepository(private val dao: LinkDao) {
     suspend fun createLink(rawUrl: String, categoryId: Long): LinkValidation {
         val validation = LinkValidator.validate(rawUrl)
         if (validation !is LinkValidation.Valid) return validation
+        if (dao.urlExists(validation.url)) {
+            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+        }
 
         var seed: Int
         do {
             seed = random.nextInt()
         } while (dao.shellSeedExists(seed))
 
-        dao.insertLink(
+        val insertedId = dao.insertLink(
             LinkEntity(
                 url = validation.url,
                 title = validation.host,
@@ -41,6 +44,13 @@ class LinkRepository(private val dao: LinkDao) {
                 shellSeed = seed,
             ),
         )
+        if (insertedId == -1L) {
+            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+        }
         return validation
+    }
+
+    suspend fun deleteLink(linkId: Long) {
+        dao.deleteLink(linkId)
     }
 }

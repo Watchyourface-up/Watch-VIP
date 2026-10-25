@@ -14,6 +14,7 @@ sealed interface LinkValidation {
         UNSUPPORTED_SCHEME,
         CREDENTIALS_NOT_ALLOWED,
         INVALID_HOST,
+        DUPLICATE,
     }
 }
 

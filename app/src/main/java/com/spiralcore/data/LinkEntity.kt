@@ -24,7 +24,11 @@ data class CategoryEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index("categoryId"), Index(value = ["shellSeed"], unique = true)],
+    indices = [
+        Index("categoryId"),
+        Index(value = ["shellSeed"], unique = true),
+        Index(value = ["url"], unique = true),
+    ],
 )
 data class LinkEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

@@ -11,7 +11,8 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Android's Linux AAPT2 binary is x86-64; build on a matching hosted runner.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,13 +42,18 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run unit tests and assemble debug APK
-        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
+      - name: Verify build architecture
+        run: test "$(uname -m)" = "x86_64"
 
-      - name: Upload debug APK
+      - name: Run unit tests and assemble debug and release APKs
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug assembleRelease
+
+      - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
-          name: spiralcore-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: spiralcore-apks
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
           retention-days: 14

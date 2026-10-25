@@ -25,6 +25,12 @@ interface LinkDao {
     @Query("SELECT EXISTS(SELECT 1 FROM links WHERE shellSeed = :seed)")
     suspend fun shellSeedExists(seed: Int): Boolean
 
-    @Insert
+    @Query("SELECT EXISTS(SELECT 1 FROM links WHERE url = :url)")
+    suspend fun urlExists(url: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertLink(link: LinkEntity): Long
+
+    @Query("DELETE FROM links WHERE id = :linkId")
+    suspend fun deleteLink(linkId: Long)
 }

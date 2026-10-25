@@ -1,6 +1,9 @@
 package com.spiralcore.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.clickable
@@ -22,13 +25,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddLink
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -45,6 +56,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -66,7 +81,7 @@ import kotlinx.coroutines.launch
 fun LibraryScreen() {
     val context = LocalContext.current
     val appContext = context.applicationContext
-    val repository = remember { LinkRepository(SpiralDatabase.getInstance(appContext).linkDao()) }
+    val repository = remember(appContext) { LinkRepository(SpiralDatabase.getInstance(appContext).linkDao()) }
     val links by repository.observeLinks().collectAsState(initial = emptyList())
     val categories by repository.observeCategories().collectAsState(initial = emptyList())
     val coroutineScope = rememberCoroutineScope()
@@ -76,6 +91,8 @@ fun LibraryScreen() {
     var categoryFilterId by remember { mutableStateOf<Long?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var messageIsError by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var pendingDelete by remember { mutableStateOf<LinkWithCategory?>(null) }
 
     LaunchedEffect(repository) { repository.ensureStarterCategories() }
     LaunchedEffect(categories) {
@@ -136,9 +153,11 @@ fun LibraryScreen() {
                         onValueChange = {
                             pastedUrl = it
                             message = null
+                            messageIsError = false
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("الصق رابطًا جديدًا هنا...") },
+                        isError = messageIsError,
                         leadingIcon = {
                             Icon(Icons.Outlined.AddLink, contentDescription = "رابط جديد", tint = DeepSea)
                         },
@@ -167,33 +186,96 @@ fun LibraryScreen() {
                         onClick = {
                             val categoryId = selectedCategoryId ?: return@Button
                             coroutineScope.launch {
-                                when (val result = repository.createLink(pastedUrl, categoryId)) {
-                                    is LinkValidation.Valid -> {
-                                        pastedUrl = ""
-                                        message = "تم إنشاء قوقعتك وحفظ الرابط على هذا الجهاز."
-                                        messageIsError = false
+                                isSaving = true
+                                try {
+                                    when (val result = repository.createLink(pastedUrl, categoryId)) {
+                                        is LinkValidation.Valid -> {
+                                            pastedUrl = ""
+                                            message = "تم إنشاء قوقعتك وحفظ الرابط على هذا الجهاز."
+                                            messageIsError = false
+                                        }
+                                        is LinkValidation.Invalid -> {
+                                            message = validationMessage(result)
+                                            messageIsError = true
+                                        }
                                     }
-                                    is LinkValidation.Invalid -> {
-                                        message = validationMessage(result)
-                                        messageIsError = true
-                                    }
+                                } finally {
+                                    isSaving = false
                                 }
                             }
                         },
-                        enabled = pastedUrl.isNotBlank() && selectedCategoryId != null,
+                        enabled = pastedUrl.isNotBlank() && selectedCategoryId != null && !isSaving,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DeepSea),
                     ) {
-                        Text("إنشاء قوقعة", fontWeight = FontWeight.SemiBold)
+                        if (isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("جارٍ الحفظ...", fontWeight = FontWeight.SemiBold)
+                        } else {
+                            Text("إنشاء قوقعة", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                     if (!message.isNullOrBlank()) {
                         Spacer(Modifier.height(10.dp))
-                        Text(
-                            text = message.orEmpty(),
-                            color = if (messageIsError) MaterialTheme.colorScheme.error else DeepSeaDark,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { liveRegion = LiveRegionMode.Polite },
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (messageIsError) {
+                                MaterialTheme.colorScheme.errorContainer
+                            } else {
+                                SoftMint
+                            },
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Icon(
+                                    imageVector = if (messageIsError) {
+                                        Icons.Outlined.ErrorOutline
+                                    } else {
+                                        Icons.Outlined.CheckCircleOutline
+                                    },
+                                    contentDescription = null,
+                                    tint = if (messageIsError) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        DeepSeaDark
+                                    },
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Column {
+                                    Text(
+                                        text = if (messageIsError) "تعذر حفظ الرابط" else "تم الحفظ بنجاح",
+                                        color = if (messageIsError) {
+                                            MaterialTheme.colorScheme.onErrorContainer
+                                        } else {
+                                            DeepSeaDark
+                                        },
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Text(
+                                        text = message.orEmpty(),
+                                        color = if (messageIsError) {
+                                            MaterialTheme.colorScheme.onErrorContainer
+                                        } else {
+                                            DeepSeaDark
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -211,8 +293,15 @@ fun LibraryScreen() {
                     fontWeight = FontWeight.Bold,
                     color = Ink,
                 )
-                TextButton(onClick = { categoryFilterId = null }) {
-                    Text("عرض الكل", color = DeepSea)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${visibleLinks.size} رابط",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MutedInk,
+                    )
+                    TextButton(onClick = { categoryFilterId = null }) {
+                        Text("عرض الكل", color = DeepSea)
+                    }
                 }
             }
         }
@@ -238,7 +327,10 @@ fun LibraryScreen() {
 
         if (visibleLinks.isEmpty()) {
             item {
-                EmptyLibraryState(hasAnyLinks = links.isNotEmpty())
+                EmptyLibraryState(
+                    hasAnyLinks = links.isNotEmpty(),
+                    onResetFilter = { categoryFilterId = null },
+                )
             }
         } else {
             items(visibleLinks, key = { it.link.id }) { item ->
@@ -253,16 +345,66 @@ fun LibraryScreen() {
                             messageIsError = true
                         }
                     },
+                    onDelete = { pendingDelete = item },
+                    onCopy = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("الرابط", item.link.url))
+                        message = "تم نسخ الرابط."
+                        messageIsError = false
+                    },
+                    onShare = {
+                        try {
+                            context.startActivity(
+                                Intent.createChooser(
+                                    Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, item.link.url)
+                                    },
+                                    "مشاركة الرابط",
+                                ),
+                            )
+                        } catch (_: ActivityNotFoundException) {
+                            message = "لا يوجد تطبيق لمشاركة الرابط."
+                            messageIsError = true
+                        }
+                    },
                 )
             }
         }
     }
+
+    pendingDelete?.let { item ->
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text("حذف القوقعة؟") },
+            text = { Text("سيُحذف الرابط من هذه المكتبة نهائيًا.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch { repository.deleteLink(item.link.id) }
+                    pendingDelete = null
+                    message = "تم حذف الرابط."
+                    messageIsError = false
+                }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text("إلغاء") }
+            },
+        )
+    }
 }
 
 @Composable
-private fun LinkCard(item: LinkWithCategory, onOpen: () -> Unit) {
+private fun LinkCard(
+    item: LinkWithCategory,
+    onOpen: () -> Unit,
+    onDelete: () -> Unit,
+    onCopy: () -> Unit,
+    onShare: () -> Unit,
+) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(role = Role.Button, onClick = onOpen),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Paper),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
@@ -300,19 +442,34 @@ private fun LinkCard(item: LinkWithCategory, onOpen: () -> Unit) {
                         color = DeepSeaDark,
                     )
                 }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    IconButton(onClick = onCopy) {
+                        Icon(Icons.Outlined.ContentCopy, contentDescription = "نسخ الرابط", tint = DeepSea)
+                    }
+                    IconButton(onClick = onShare) {
+                        Icon(Icons.Outlined.Share, contentDescription = "مشاركة الرابط", tint = DeepSea)
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Outlined.DeleteOutline,
+                            contentDescription = "حذف الرابط",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
             }
-            Icon(
-                imageVector = Icons.Outlined.OpenInNew,
-                contentDescription = "فتح الرابط",
-                tint = DeepSea,
-                modifier = Modifier.padding(start = 8.dp).size(20.dp),
-            )
+            IconButton(onClick = onOpen) {
+                Icon(Icons.Outlined.OpenInNew, contentDescription = "فتح الرابط", tint = DeepSea)
+            }
         }
     }
 }
 
 @Composable
-private fun EmptyLibraryState(hasAnyLinks: Boolean) {
+private fun EmptyLibraryState(hasAnyLinks: Boolean, onResetFilter: () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -337,6 +494,12 @@ private fun EmptyLibraryState(hasAnyLinks: Boolean) {
                 color = MutedInk,
                 textAlign = TextAlign.Center,
             )
+            if (hasAnyLinks) {
+                Spacer(Modifier.height(12.dp))
+                TextButton(onClick = onResetFilter) {
+                    Text("عرض كل الروابط", color = DeepSea)
+                }
+            }
         }
     }
 }
@@ -347,4 +510,5 @@ private fun validationMessage(validation: LinkValidation.Invalid): String = when
     LinkValidation.Reason.UNSUPPORTED_SCHEME -> "استخدم رابط HTTP أو HTTPS فقط."
     LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED -> "لا يمكن حفظ رابط يحتوي بيانات دخول."
     LinkValidation.Reason.INVALID_HOST -> "تعذر التحقق من عنوان الموقع."
+    LinkValidation.Reason.DUPLICATE -> "هذا الرابط محفوظ مسبقًا."
 }
