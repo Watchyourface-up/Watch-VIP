@@ -1,5 +1,6 @@
 package com.spiralcore.data
 
+import androidx.sqlite.SQLiteConstraintException
 import com.spiralcore.domain.LinkValidation
 import com.spiralcore.domain.LinkValidator
 import kotlinx.coroutines.flow.Flow
@@ -30,27 +31,43 @@ class LinkRepository(private val dao: LinkDao) {
             return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
         }
 
-        var seed: Int
-        do {
-            seed = random.nextInt()
-        } while (dao.shellSeedExists(seed))
-
-        val insertedId = dao.insertLink(
-            LinkEntity(
-                url = validation.url,
-                title = validation.host,
-                categoryId = categoryId,
-                createdAt = System.currentTimeMillis(),
-                shellSeed = seed,
-            ),
-        )
-        if (insertedId == -1L) {
-            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+        // Unique indexes are authoritative under concurrent requests; only map an actual URL
+        // collision to DUPLICATE rather than masking unrelated storage failures.
+        val seed = nextUniqueSeed()
+        val insertedId = try {
+            dao.insertLink(
+                LinkEntity(
+                    url = validation.url,
+                    title = validation.host,
+                    categoryId = categoryId,
+                    createdAt = System.currentTimeMillis(),
+                    shellSeed = seed,
+                ),
+            )
+        } catch (exception: SQLiteConstraintException) {
+            if (dao.urlExists(validation.url)) {
+                return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+            }
+            throw exception
         }
+
+        if (insertedId == -1L) return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
         return validation
+    }
+
+    private suspend fun nextUniqueSeed(): Int {
+        repeat(MAX_SEED_ATTEMPTS) {
+            val candidate = random.nextInt()
+            if (!dao.shellSeedExists(candidate)) return candidate
+        }
+        throw IllegalStateException("Could not allocate a unique shell seed")
     }
 
     suspend fun deleteLink(linkId: Long) {
         dao.deleteLink(linkId)
+    }
+
+    private companion object {
+        const val MAX_SEED_ATTEMPTS = 16
     }
 }
