@@ -13,19 +13,13 @@ permissions:
   contents: read
 
 jobs:
-  codeql:
+  static-analysis:
     runs-on: ubuntu-24.04
     permissions:
-      actions: read
       contents: read
-      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: java-kotlin
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -33,12 +27,14 @@ jobs:
           java-version: "17"
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-      - name: Build for analysis
-        run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-          ./gradlew --no-daemon assembleDebug
-      - name: Analyze
-        uses: github/codeql-action/analyze@v3
+      - name: Install required Android platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - name: Build and test
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug assembleRelease
+      - name: Check for committed secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   dependency-review:
     if: github.event_name == 'pull_request'
@@ -57,11 +53,16 @@ jobs:
   dependency-audit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install required Android platform
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - name: Verify dependency graph resolves
         run: ./gradlew --no-daemon dependencies
