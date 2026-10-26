@@ -1,6 +1,6 @@
 package com.spiralcore.data
 
-import androidx.sqlite.SQLiteConstraintException
+import android.database.sqlite.SQLiteConstraintException
 import com.spiralcore.domain.LinkValidation
 import com.spiralcore.domain.LinkValidator
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +32,7 @@ class LinkRepository(private val dao: LinkDao) {
         }
 
         // Unique indexes are authoritative under concurrent requests; only map an actual URL
-        // collision to DUPLICATE rather than masking unrelated storage failures.
+        // collision to DUPLICATE rather than masking unrelated storage errors.
         val seed = nextUniqueSeed()
         val insertedId = try {
             dao.insertLink(
