@@ -12,6 +12,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
 import com.spiralcore.ui.SpiralCoreApp
 import com.spiralcore.ui.theme.SpiralCoreTheme
 
@@ -20,17 +21,15 @@ class MainActivity : FragmentActivity() {
     private var credentialSuccess: (() -> Unit)? = null
     private var credentialFailure: ((String) -> Unit)? = null
     private var activeBiometricPrompt: BiometricPrompt? = null
-    private var awaitingLegacyDeviceCredential = false
     private var authenticationGeneration = 0
+    private var pendingCredentialGeneration = -1
 
     override fun onSaveInstanceState(outState: Bundle) {
-        // No authentication state or callback is persisted across Activity recreation.
         invalidateAuthentication()
         super.onSaveInstanceState(outState)
     }
 
     override fun onStop() {
-        // A result delivered after backgrounding must never unlock a stopped/recreated Activity.
         invalidateAuthentication()
         super.onStop()
     }
@@ -46,7 +45,7 @@ class MainActivity : FragmentActivity() {
         activeBiometricPrompt = null
         credentialSuccess = null
         credentialFailure = null
-        awaitingLegacyDeviceCredential = false
+        pendingCredentialGeneration = -1
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,16 +55,17 @@ class MainActivity : FragmentActivity() {
         deviceCredentialLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
+            val generation = pendingCredentialGeneration
             val success = credentialSuccess
             val failure = credentialFailure
-            val generation = pendingCredentialGeneration
+            pendingCredentialGeneration = -1
             credentialSuccess = null
             credentialFailure = null
-            awaitingLegacyDeviceCredential = false
 
-            if (generation != authenticationGeneration || isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(
-                    androidx.lifecycle.Lifecycle.State.RESUMED,
-                )
+            if (generation != authenticationGeneration ||
+                isFinishing ||
+                isDestroyed ||
+                !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
             ) {
                 return@registerForActivityResult
             }
@@ -85,44 +85,32 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    private var pendingCredentialGeneration = -1
-
     private fun authenticate(
         deviceCredentialOnly: Boolean,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit,
     ) {
-        if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(
-                androidx.lifecycle.Lifecycle.State.RESUMED,
-            )
-        ) {
-            return
-        }
+        if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return
 
-        // Invalidate any earlier request before starting a new one.
         authenticationGeneration++
         val generation = authenticationGeneration
         activeBiometricPrompt?.cancelAuthentication()
         activeBiometricPrompt = null
         credentialSuccess = null
         credentialFailure = null
-        awaitingLegacyDeviceCredential = false
+        pendingCredentialGeneration = -1
 
         val guardedSuccess = {
             if (generation == authenticationGeneration &&
-                lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
                 !isFinishing && !isDestroyed
-            ) {
-                onSuccess()
-            }
+            ) onSuccess()
         }
         val guardedFailure: (String) -> Unit = { message ->
             if (generation == authenticationGeneration &&
-                lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
                 !isFinishing && !isDestroyed
-            ) {
-                onFailure(message)
-            }
+            ) onFailure(message)
         }
 
         val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
@@ -131,7 +119,6 @@ class MainActivity : FragmentActivity() {
             return
         }
 
-        // Android 9/10 cannot combine strong biometrics with DEVICE_CREDENTIAL in one prompt.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             if (deviceCredentialOnly) {
                 launchLegacyDeviceCredential(keyguard, generation, guardedSuccess, guardedFailure)
@@ -213,13 +200,12 @@ class MainActivity : FragmentActivity() {
         pendingCredentialGeneration = generation
         credentialSuccess = onSuccess
         credentialFailure = onFailure
-        awaitingLegacyDeviceCredential = true
         try {
             deviceCredentialLauncher.launch(intent)
         } catch (_: RuntimeException) {
+            pendingCredentialGeneration = -1
             credentialSuccess = null
             credentialFailure = null
-            awaitingLegacyDeviceCredential = false
             onFailure("تعذر بدء تحقق PIN الهاتف.")
         }
     }
