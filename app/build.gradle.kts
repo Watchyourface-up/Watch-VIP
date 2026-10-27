@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.spiralcore"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.spiralcore"
