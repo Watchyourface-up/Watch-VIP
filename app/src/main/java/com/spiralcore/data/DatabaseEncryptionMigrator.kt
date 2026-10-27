@@ -75,7 +75,10 @@ internal class DatabaseEncryptionMigrator(
     private fun recoverInterruptedMigration() {
         // Keep the plaintext source. A valid final file can be recovered; partial temporary
         // files are disposable only while the plaintext source remains available.
-        if (encryptedFile.exists() && canOpenEncrypted(encryptedFile)) {
+        if (encryptedFile.exists()) {
+            check(canOpenEncrypted(encryptedFile)) {
+                "An encrypted destination exists but cannot be verified; refusing to overwrite or delete it"
+            }
             check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
                 "Unable to persist recovered encrypted database state"
             }
