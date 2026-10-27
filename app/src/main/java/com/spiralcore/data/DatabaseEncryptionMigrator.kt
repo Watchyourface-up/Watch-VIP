@@ -221,12 +221,6 @@ internal class DatabaseEncryptionMigrator(
         return tables
     }
 
-    private fun deleteSqliteSidecars(file: File) {
-        File(file.absolutePath + "-wal").delete()
-        File(file.absolutePath + "-shm").delete()
-        File(file.absolutePath + "-journal").delete()
-    }
-
     private class SQLCipherMigrationHelper(
         context: Context,
         file: File,
