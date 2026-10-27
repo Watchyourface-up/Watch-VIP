@@ -44,13 +44,15 @@ abstract class SpiralDatabase : RoomDatabase() {
                     SpiralDatabase::class.java,
                     ENCRYPTED_DATABASE_NAME,
                 )
-                    .openHelperFactory(SupportOpenHelperFactory(key))
+                    .openHelperFactory(SupportOpenHelperFactory(key.copyOf()))
                     .addMigrations(MIGRATION_1_2)
                     .build()
 
-                // Do not delete the plaintext source here. Room opens lazily; deletion happens
-                // only after the encrypted database has been successfully opened and validated.
-                database.query("SELECT count(*) FROM sqlite_master", emptyArray())
+                // Force Room to open and migrate the encrypted database before marking the
+                // plaintext source eligible for cleanup. Close the cursor deterministically.
+                database.openHelper.writableDatabase.query("SELECT count(*) FROM sqlite_master").use { cursor ->
+                    check(cursor.moveToFirst()) { "Encrypted Room schema could not be read" }
+                }
                 migrator.markEncryptedDatabaseOpened()
                 return database
             } finally {
