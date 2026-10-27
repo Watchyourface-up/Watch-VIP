@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -42,10 +44,14 @@ jobs:
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - name: Build and run unit tests
         run: ./gradlew --no-daemon testDebugUnitTest assembleDebug assembleRelease
-      - name: Check for committed secrets
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Scan repository for secrets with Gitleaks CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          curl --fail --silent --show-error --location             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"             --output /tmp/gitleaks.tar.gz
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1
 
   dependency-audit:
     runs-on: ubuntu-24.04
