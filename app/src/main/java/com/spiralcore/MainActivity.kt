@@ -20,11 +20,14 @@ class MainActivity : FragmentActivity() {
     private var credentialSuccess: (() -> Unit)? = null
     private var credentialFailure: ((String) -> Unit)? = null
     private var activeBiometricPrompt: BiometricPrompt? = null
+    private var awaitingLegacyDeviceCredential = false
 
     override fun onSaveInstanceState(outState: Bundle) {
         // Authentication state and success callbacks are intentionally never saved.
-        credentialSuccess = null
-        credentialFailure = null
+        if (!awaitingLegacyDeviceCredential) {
+            credentialSuccess = null
+            credentialFailure = null
+        }
         activeBiometricPrompt?.cancelAuthentication()
         activeBiometricPrompt = null
         super.onSaveInstanceState(outState)
@@ -34,8 +37,10 @@ class MainActivity : FragmentActivity() {
         // Cancel an in-flight biometric dialog if this Activity is backgrounded.
         activeBiometricPrompt?.cancelAuthentication()
         activeBiometricPrompt = null
-        credentialSuccess = null
-        credentialFailure = null
+        if (!awaitingLegacyDeviceCredential) {
+            credentialSuccess = null
+            credentialFailure = null
+        }
         super.onStop()
     }
 
@@ -48,6 +53,7 @@ class MainActivity : FragmentActivity() {
         ) { result ->
             val success = credentialSuccess
             val failure = credentialFailure
+            awaitingLegacyDeviceCredential = false
             credentialSuccess = null
             credentialFailure = null
             if (result.resultCode == RESULT_OK) {
@@ -153,9 +159,11 @@ class MainActivity : FragmentActivity() {
         }
         credentialSuccess = onSuccess
         credentialFailure = onFailure
+        awaitingLegacyDeviceCredential = true
         try {
             deviceCredentialLauncher.launch(intent)
         } catch (_: RuntimeException) {
+            awaitingLegacyDeviceCredential = false
             credentialSuccess = null
             credentialFailure = null
             onFailure("تعذر بدء تحقق PIN الهاتف.")
