@@ -112,6 +112,7 @@ internal class DatabaseEncryptionMigrator(
                     }
                 }
                 val oldCounts = tableCounts(source)
+                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
 
                 // Attach the plaintext database to SQLCipher, then export the attached source
                 // into the encrypted main database.
