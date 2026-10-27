@@ -11,7 +11,7 @@ The CI run for PR #4 head `ef309eaf3bcd7434887027c2c968de9707f784e9` completed s
 - Gradle dependency resolution: passed.
 - Dependency Review workflow job: success, but its review step was skipped because the repository dependency-graph SBOM endpoint was unavailable. This is not a successful dependency-change review.
 
-These results validate that code at that SHA builds and static checks completed. They do not validate subsequent commits on `fix/security-final-audit-2026-10`, do not constitute a penetration test, and do not prove zero vulnerabilities.
+Final-audit head `0e9af6cfda5085a2bc572aad8eb024578ce708d1` adds a stronger migration integrity check; its CI run is in progress. Do not treat the earlier passing run at `24a27de39427066ad933a89a23ca4420cc5d85a0` as validation of the current head.
 
 ## Implemented controls
 
@@ -21,16 +21,16 @@ These results validate that code at that SHA builds and static checks completed.
 - The UI clears its unlocked state on stop and activity destruction; biometric prompt cancellation and callback generation checks prevent stale callbacks from unlocking a stopped/recreated activity.
 - Android backup is disabled and XML backup/data-extraction rules exclude app databases, shared preferences and files.
 - SQLCipher for Android 4.19.1 is wired to Room 2.6.1. A random 256-bit database key is wrapped with AES-GCM using Android Keystore.
-- Plaintext-to-encrypted conversion uses a separate temporary destination and checks source integrity, table row counts, encrypted integrity and key acceptance before promoting the encrypted file. The original plaintext source remains until encrypted Room successfully opens.
+- Plaintext-to-encrypted conversion uses a separate temporary destination. It checks source integrity, compares schema metadata and typed row values between source and encrypted output, checks encrypted integrity/key acceptance, and preserves the original until encrypted Room opens successfully.
 - Plaintext cleanup failures are persisted as pending and retried on later launches; flash-storage forensic erasure cannot be guaranteed.
 
 ## Release blockers and environment limits
 
-1. Re-run every CI gate on the latest final-audit branch head after the final authentication and manifest edits.
+1. Await and inspect all CI gates on the current final-audit head `0e9af6cfda5085a2bc572aad8eb024578ce708d1`.
 2. Run Android instrumentation tests on a supported Android emulator/device. The standard CI workflow currently runs JVM tests/build/security analysis but does not execute the full instrumentation suite. Do not claim the encryption migration instrumentation tests passed unless they are explicitly run.
 3. Execute the documented real-device test matrix for Android 9/10 and Android 11+; verify biometric/PIN cancellation, task switching, recreation, process death and FLAG_SECURE behavior.
-4. Test migration against a copy of representative real v1 data on physical devices. Compare rows, schema, timestamps and categories before/after, and verify recovery after interruption.
-5. Confirm branch protection/rulesets in repository settings. The GitHub integration cannot apply the required branch-protection settings, and no ruleset was found through the accessible endpoint. Treat `main` protection as not configured until verified by an administrator.
+4. Test migration against a copy of representative real v1 data on physical devices, checking rows, schema, timestamps and categories before/after, plus recovery after interruption.
+5. Confirm branch protection/rulesets in repository settings. The GitHub integration cannot access the branch-protection API (403), so treat `main` protection as unverified and likely not configured until checked by an administrator.
 6. Configure release signing with protected GitHub Environment secrets. Signing credentials must never be committed. Verify the final APK signature before publication.
 7. Make an explicit backup and recovery policy: current backup exclusions intentionally prevent the encrypted database and local Keystore-wrapped key from transferring to another device; users can lose access if app data or the device Keystore is lost.
 8. Run independent security review/penetration testing before public release.
