@@ -6,7 +6,6 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import net.zetetic.database.sqlcipher.SQLiteDatabase as CipherDatabase
 import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(
@@ -37,10 +36,9 @@ abstract class SpiralDatabase : RoomDatabase() {
             val migrator = DatabaseEncryptionMigrator(context, keyManager)
             migrator.prepareEncryptedDatabase()
             val key = keyManager.getOrCreateDatabaseKey()
-            // SQLCipher for Android 4.x loads the native library through loadLibs on
-            // the legacy API; sqlcipher-android 4.19 exposes System.loadLibrary instead.
-            CipherDatabase.loadLibs(context)
             try {
+                // sqlcipher-android 4.19 requires explicit loading of its bundled native library.
+                System.loadLibrary("sqlcipher")
                 val database = Room.databaseBuilder(
                     context,
                     SpiralDatabase::class.java,
