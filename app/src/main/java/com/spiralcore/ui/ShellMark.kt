@@ -17,22 +17,23 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.spiralcore.domain.ShellStyles
-import com.spiralcore.ui.theme.Coral
-import com.spiralcore.ui.theme.DeepSea
+import com.spiralcore.ui.theme.AlertRed
+import com.spiralcore.ui.theme.BrandOrange
 import com.spiralcore.ui.theme.DeepSeaDark
+import com.spiralcore.ui.theme.OrangeTint
+import com.spiralcore.ui.theme.RedTint
+import com.spiralcore.ui.theme.SecondaryGray
 import com.spiralcore.ui.theme.ShellLine
-import com.spiralcore.ui.theme.SoftCoral
-import com.spiralcore.ui.theme.SoftMint
 
 @Composable
 fun ShellMark(seed: Int, modifier: Modifier = Modifier, size: Dp = 52.dp) {
     val palettes = listOf(
-        DeepSea to SoftMint,
-        Coral to SoftCoral,
-        Color(0xFF719083) to Color(0xFFE6EEE5),
-        Color(0xFFC39A62) to Color(0xFFF2E8D5),
-        Color(0xFF7186A1) to Color(0xFFE3E8F0),
-        DeepSeaDark to Color(0xFFDCE9E4),
+        BrandOrange to OrangeTint,
+        AlertRed to RedTint,
+        BrandOrange to SecondaryGray,
+        DeepSeaDark to OrangeTint,
+        Color(0xFF2B2B2B) to SecondaryGray,
+        AlertRed to SecondaryGray,
     )
     val style = ShellStyles.fromSeed(seed)
     val (shellColor, innerColor) = palettes[style.paletteIndex]
