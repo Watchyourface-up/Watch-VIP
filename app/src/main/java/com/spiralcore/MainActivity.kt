@@ -21,27 +21,32 @@ class MainActivity : FragmentActivity() {
     private var credentialFailure: ((String) -> Unit)? = null
     private var activeBiometricPrompt: BiometricPrompt? = null
     private var awaitingLegacyDeviceCredential = false
+    private var authenticationGeneration = 0
 
     override fun onSaveInstanceState(outState: Bundle) {
-        // Authentication state and success callbacks are intentionally never saved.
-        if (!awaitingLegacyDeviceCredential) {
-            credentialSuccess = null
-            credentialFailure = null
-        }
-        activeBiometricPrompt?.cancelAuthentication()
-        activeBiometricPrompt = null
+        // No authentication state or callback is persisted across Activity recreation.
+        invalidateAuthentication()
         super.onSaveInstanceState(outState)
     }
 
     override fun onStop() {
-        // Cancel an in-flight biometric dialog if this Activity is backgrounded.
+        // A result delivered after backgrounding must never unlock a stopped/recreated Activity.
+        invalidateAuthentication()
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        invalidateAuthentication()
+        super.onDestroy()
+    }
+
+    private fun invalidateAuthentication() {
+        authenticationGeneration++
         activeBiometricPrompt?.cancelAuthentication()
         activeBiometricPrompt = null
-        if (!awaitingLegacyDeviceCredential) {
-            credentialSuccess = null
-            credentialFailure = null
-        }
-        super.onStop()
+        credentialSuccess = null
+        credentialFailure = null
+        awaitingLegacyDeviceCredential = false
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,9 +58,17 @@ class MainActivity : FragmentActivity() {
         ) { result ->
             val success = credentialSuccess
             val failure = credentialFailure
-            awaitingLegacyDeviceCredential = false
+            val generation = pendingCredentialGeneration
             credentialSuccess = null
             credentialFailure = null
+            awaitingLegacyDeviceCredential = false
+
+            if (generation != authenticationGeneration || isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(
+                    androidx.lifecycle.Lifecycle.State.RESUMED,
+                )
+            ) {
+                return@registerForActivityResult
+            }
             if (result.resultCode == RESULT_OK) {
                 success?.invoke()
             } else {
@@ -72,29 +85,63 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    private var pendingCredentialGeneration = -1
+
     private fun authenticate(
         deviceCredentialOnly: Boolean,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit,
     ) {
-        val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
-        if (!keyguard.isDeviceSecure) {
-            onFailure("فعّل قفل الشاشة أو PIN للهاتف أولًا.")
+        if (isFinishing || isDestroyed || !lifecycle.currentState.isAtLeast(
+                androidx.lifecycle.Lifecycle.State.RESUMED,
+            )
+        ) {
             return
         }
 
-        // Before Android 11, the system biometric prompt cannot combine BIOMETRIC_STRONG
-        // and DEVICE_CREDENTIAL. Keep the explicit credential path usable even without biometrics.
+        // Invalidate any earlier request before starting a new one.
+        authenticationGeneration++
+        val generation = authenticationGeneration
+        activeBiometricPrompt?.cancelAuthentication()
+        activeBiometricPrompt = null
+        credentialSuccess = null
+        credentialFailure = null
+        awaitingLegacyDeviceCredential = false
+
+        val guardedSuccess = {
+            if (generation == authenticationGeneration &&
+                lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                !isFinishing && !isDestroyed
+            ) {
+                onSuccess()
+            }
+        }
+        val guardedFailure: (String) -> Unit = { message ->
+            if (generation == authenticationGeneration &&
+                lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                !isFinishing && !isDestroyed
+            ) {
+                onFailure(message)
+            }
+        }
+
+        val keyguard = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+        if (!keyguard.isDeviceSecure) {
+            guardedFailure("فعّل قفل الشاشة أو PIN للهاتف أولًا.")
+            return
+        }
+
+        // Android 9/10 cannot combine strong biometrics with DEVICE_CREDENTIAL in one prompt.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             if (deviceCredentialOnly) {
-                launchLegacyDeviceCredential(keyguard, onSuccess, onFailure)
+                launchLegacyDeviceCredential(keyguard, generation, guardedSuccess, guardedFailure)
                 return
             }
             val biometricAvailable = BiometricManager.from(this).canAuthenticate(
                 BiometricManager.Authenticators.BIOMETRIC_STRONG,
             ) == BiometricManager.BIOMETRIC_SUCCESS
             if (!biometricAvailable) {
-                onFailure("البصمة غير جاهزة على هذا الهاتف. استخدم زر PIN الهاتف.")
+                guardedFailure("البصمة غير جاهزة على هذا الهاتف. استخدم زر PIN الهاتف.")
                 return
             }
         }
@@ -121,11 +168,11 @@ class MainActivity : FragmentActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     activeBiometricPrompt = null
-                    onSuccess()
+                    guardedSuccess()
                 }
 
                 override fun onAuthenticationFailed() {
-                    onFailure("لم يتم التعرّف على البصمة. حاول مرة أخرى أو استخدم PIN الهاتف.")
+                    guardedFailure("لم يتم التعرّف على البصمة. حاول مرة أخرى أو استخدم PIN الهاتف.")
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
@@ -134,18 +181,24 @@ class MainActivity : FragmentActivity() {
                         errorCode != BiometricPrompt.ERROR_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
                     ) {
-                        onFailure(errString.toString())
+                        guardedFailure(errString.toString())
                     }
                 }
             },
         )
         activeBiometricPrompt = prompt
-        prompt.authenticate(promptBuilder.build())
+        try {
+            prompt.authenticate(promptBuilder.build())
+        } catch (_: RuntimeException) {
+            activeBiometricPrompt = null
+            guardedFailure("تعذر بدء التحقق من قفل الهاتف.")
+        }
     }
 
     @Suppress("DEPRECATION")
     private fun launchLegacyDeviceCredential(
         keyguard: KeyguardManager,
+        generation: Int,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit,
     ) {
@@ -157,15 +210,16 @@ class MainActivity : FragmentActivity() {
             onFailure("تعذر فتح تحقق PIN الهاتف. تأكد من إعداد قفل الشاشة.")
             return
         }
+        pendingCredentialGeneration = generation
         credentialSuccess = onSuccess
         credentialFailure = onFailure
         awaitingLegacyDeviceCredential = true
         try {
             deviceCredentialLauncher.launch(intent)
         } catch (_: RuntimeException) {
-            awaitingLegacyDeviceCredential = false
             credentialSuccess = null
             credentialFailure = null
+            awaitingLegacyDeviceCredential = false
             onFailure("تعذر بدء تحقق PIN الهاتف.")
         }
     }
