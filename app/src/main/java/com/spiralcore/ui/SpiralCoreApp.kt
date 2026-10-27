@@ -30,9 +30,18 @@ fun SpiralCoreApp(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                unlocked = false
-                authError = null
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    // Never retain an authenticated state when this Activity becomes stopped.
+                    unlocked = false
+                    authError = null
+                }
+                Lifecycle.Event.ON_DESTROY -> {
+                    // Configuration changes destroy the old Composition. Do not carry unlock
+                    // state into a replacement Activity; its fresh composition starts locked.
+                    unlocked = false
+                }
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
