@@ -49,12 +49,33 @@ internal class DatabaseEncryptionMigrator(
             "Unable to persist encrypted database state"
         }
 
-        // Deletion happens only after the encrypted Room instance has opened successfully.
-        // Failure to delete the source must not stop the application from using encrypted data.
-        // Preserve the verified original file until a separate cleanup policy is implemented.
-        // Flash storage cannot guarantee forensic erasure; keeping it avoids an unsafe one-shot
-        // delete immediately after first successful open.
-        preferences.edit().putBoolean(PLAINTEXT_CLEANUP_PENDING, sourceFile.exists()).commit()
+        // Best-effort removal of plaintext only after Room has successfully opened and queried
+        // the encrypted database. Flash storage cannot guarantee forensic erasure, but retaining
+        // the old file indefinitely would leave sensitive records readable outside SQLCipher.
+        val cleanupSucceeded = removePlaintextDatabase()
+        check(
+            preferences.edit()
+                .putBoolean(PLAINTEXT_CLEANUP_PENDING, !cleanupSucceeded)
+                .commit(),
+        ) { "Unable to persist plaintext cleanup status" }
+        check(cleanupSucceeded || !sourceFile.exists()) {
+            "Encrypted database is ready, but plaintext database cleanup failed; retry on next launch"
+        }
+    }
+
+    private fun removePlaintextDatabase(): Boolean {
+        if (!sourceFile.exists()) return true
+        // Remove sidecars only once Room has closed all existing database handles. The app opens
+        // the encrypted database under a different name, so the plaintext DB is not in use here.
+        val sidecars = listOf(
+            File(sourceFile.absolutePath + "-wal"),
+            File(sourceFile.absolutePath + "-shm"),
+            File(sourceFile.absolutePath + "-journal"),
+        )
+        sidecars.forEach { file ->
+            if (file.exists() && !file.delete()) return false
+        }
+        return !sourceFile.exists() || sourceFile.delete()
     }
 
     private fun encryptIfNeeded() {
