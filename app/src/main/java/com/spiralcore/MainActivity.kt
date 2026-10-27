@@ -19,6 +19,30 @@ class MainActivity : FragmentActivity() {
     private lateinit var deviceCredentialLauncher: ActivityResultLauncher<Intent>
     private var credentialSuccess: (() -> Unit)? = null
     private var credentialFailure: ((String) -> Unit)? = null
+    private var activeBiometricPrompt: BiometricPrompt? = null
+    private var awaitingLegacyDeviceCredential = false
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Authentication state and success callbacks are intentionally never saved.
+        if (!awaitingLegacyDeviceCredential) {
+            credentialSuccess = null
+            credentialFailure = null
+        }
+        activeBiometricPrompt?.cancelAuthentication()
+        activeBiometricPrompt = null
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onStop() {
+        // Cancel an in-flight biometric dialog if this Activity is backgrounded.
+        activeBiometricPrompt?.cancelAuthentication()
+        activeBiometricPrompt = null
+        if (!awaitingLegacyDeviceCredential) {
+            credentialSuccess = null
+            credentialFailure = null
+        }
+        super.onStop()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +53,7 @@ class MainActivity : FragmentActivity() {
         ) { result ->
             val success = credentialSuccess
             val failure = credentialFailure
+            awaitingLegacyDeviceCredential = false
             credentialSuccess = null
             credentialFailure = null
             if (result.resultCode == RESULT_OK) {
@@ -95,6 +120,7 @@ class MainActivity : FragmentActivity() {
             ContextCompat.getMainExecutor(this),
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    activeBiometricPrompt = null
                     onSuccess()
                 }
 
@@ -103,6 +129,7 @@ class MainActivity : FragmentActivity() {
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    activeBiometricPrompt = null
                     if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
@@ -112,6 +139,7 @@ class MainActivity : FragmentActivity() {
                 }
             },
         )
+        activeBiometricPrompt = prompt
         prompt.authenticate(promptBuilder.build())
     }
 
@@ -131,9 +159,11 @@ class MainActivity : FragmentActivity() {
         }
         credentialSuccess = onSuccess
         credentialFailure = onFailure
+        awaitingLegacyDeviceCredential = true
         try {
             deviceCredentialLauncher.launch(intent)
         } catch (_: RuntimeException) {
+            awaitingLegacyDeviceCredential = false
             credentialSuccess = null
             credentialFailure = null
             onFailure("تعذر بدء تحقق PIN الهاتف.")

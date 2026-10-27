@@ -7,10 +7,7 @@ import org.junit.Test
 class LinkValidatorTest {
     @Test
     fun addsHttpsToBareDomain() {
-        assertEquals(
-            LinkValidation.Valid("https://example.com/", "example.com"),
-            LinkValidator.validate("example.com"),
-        )
+        assertEquals(LinkValidation.Valid("https://example.com/", "example.com"), LinkValidator.validate("example.com"))
     }
 
     @Test
@@ -47,34 +44,66 @@ class LinkValidatorTest {
     }
 
     @Test
-    fun rejectsCredentialsEmbeddedInUrl() {
-        assertEquals(
-            LinkValidation.Invalid(LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED),
-            LinkValidator.validate("https://user:secret@example.com/private"),
-        )
+    fun rejectsCredentialsAndAuthorityConfusion() {
+        listOf(
+            "https://user:secret@example.com/private",
+            "https://example.com@evil.example/",
+            "https://user%40example.com@example.net/",
+        ).forEach {
+            assertEquals(
+                LinkValidation.Invalid(LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED),
+                LinkValidator.validate(it),
+            )
+        }
     }
 
     @Test
-    fun rejectsMalformedAndEmptyInput() {
-        assertEquals(LinkValidation.Invalid(LinkValidation.Reason.EMPTY), LinkValidator.validate("  "))
-        assertTrue(LinkValidator.validate("https://") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://example.com:0/") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://example.com:65536/") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://example.com:/") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://example.com:abc/") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://example.com\\n.evil") is LinkValidation.Invalid)
+    fun rejectsMalformedAndOutOfRangePorts() {
+        listOf(
+            "https://example.com:0/",
+            "https://example.com:65536/",
+            "https://example.com:/",
+            "https://example.com:abc/",
+            "https://example.com:123456/",
+            "https://[2001:db8::1]:65536/",
+            "https://[2001:db8::1]:abc/",
+        ).forEach { assertTrue("Expected rejection: $it", LinkValidator.validate(it) is LinkValidation.Invalid) }
+        assertTrue(LinkValidator.validate("https://example.com:1/") is LinkValidation.Valid)
+        assertTrue(LinkValidator.validate("https://example.com:65535/") is LinkValidation.Valid)
     }
 
     @Test
     fun rejectsControlCharactersAndOversizedUrls() {
-        assertTrue(LinkValidator.validate("https://example.com/\u0000x") is LinkValidation.Invalid)
+        listOf(
+            "https://example.com/\u0000x",
+            "https://example.com/line\nbreak",
+            "https://example.com/line\rbreak",
+            "https://example.com/\u007f",
+        ).forEach { assertTrue(LinkValidator.validate(it) is LinkValidation.Invalid) }
+
         assertTrue(LinkValidator.validate("https://example.com/" + "a".repeat(9_000)) is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com/" + "a".repeat(8_000)) is LinkValidation.Valid)
     }
 
     @Test
-    fun rejectsMalformedIpv6LiteralAndUnbracketedIpv6() {
-        assertTrue(LinkValidator.validate("https://[not-ipv6]/") is LinkValidation.Invalid)
-        assertTrue(LinkValidator.validate("https://2001:db8::1/") is LinkValidation.Invalid)
+    fun acceptsValidBracketedIpv6AndRejectsMalformedVariants() {
+        listOf(
+            "https://[2001:db8::1]/path",
+            "https://[::1]/",
+            "https://[2001:db8:0:1:2:3:4:5]/",
+            "https://[::ffff:192.0.2.1]/",
+        ).forEach { assertTrue("Expected acceptance: $it", LinkValidator.validate(it) is LinkValidation.Valid) }
+        listOf(
+            "https://[not-ipv6]/",
+            "https://[2001:db8::1",
+            "https://2001:db8::1/",
+            "https://[::::]/",
+            "https://[2001:db8::1]suffix/",
+            "https://[1:2:3:4:5:6:7:8:9]/",
+            "https://[1:2:3:4:5:6:7]/",
+            "https://[::ffff:999.0.2.1]/",
+            "https://[fe80::1%25eth0]/",
+        ).forEach { assertTrue("Expected rejection: $it", LinkValidator.validate(it) is LinkValidation.Invalid) }
     }
 
     @Test
@@ -86,10 +115,9 @@ class LinkValidatorTest {
     }
 
     @Test
-    fun rejectsLookalikeAuthorityWithCredentials() {
-        assertEquals(
-            LinkValidation.Invalid(LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED),
-            LinkValidator.validate("https://example.com@evil.example/"),
-        )
+    fun rejectsEmptyInputAndMalformedAuthority() {
+        assertEquals(LinkValidation.Invalid(LinkValidation.Reason.EMPTY), LinkValidator.validate("  "))
+        listOf("https://", "https://.", "https://.example.com", "https://example.com..", "https://exa mple.com")
+            .forEach { assertTrue("Expected rejection: $it", LinkValidator.validate(it) is LinkValidation.Invalid) }
     }
 }

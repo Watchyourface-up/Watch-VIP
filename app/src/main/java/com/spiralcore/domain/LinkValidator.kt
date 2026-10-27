@@ -70,10 +70,11 @@ object LinkValidator {
         val bracketedIpv6 = rawHost.startsWith('[') && rawHost.endsWith(']')
         val asciiHost = if (bracketedIpv6) {
             val literal = rawHost.substring(1, rawHost.length - 1)
-            // Conservative syntax check only; this is not a full IPv6 parser.
-            if (!literal.contains(':') ||
-                literal.any { !(it.isDigit() || it in "abcdefABCDEF:.%") }
-            ) return invalid(LinkValidation.Reason.INVALID_HOST)
+            // This is a complete syntax parse for IPv6 address groups, including one optional
+            // embedded IPv4 tail. Zone identifiers are intentionally rejected to avoid ambiguity.
+            if (!isValidIpv6Literal(literal)) {
+                return invalid(LinkValidation.Reason.INVALID_HOST)
+            }
             rawHost.lowercase(Locale.ROOT)
         } else {
             try {
@@ -123,6 +124,42 @@ object LinkValidator {
             return host to ":$port"
         }
         return authority to ""
+    }
+
+    private fun isValidIpv6Literal(literal: String): Boolean {
+        if (literal.isEmpty() || '%' in literal) return false
+        if (literal.count { it == ':' } < 2) return false
+
+        val hasCompression = literal.contains("::")
+        if (literal.indexOf("::") != literal.lastIndexOf("::") && hasCompression) return false
+
+        val pieces = literal.split(':')
+        if (pieces.any { it.isEmpty() } && !hasCompression) return false
+
+        val groups = pieces.filter { it.isNotEmpty() }
+        var groupCount = 0
+        for ((index, group) in groups.withIndex()) {
+            if ('.' in group) {
+                // Embedded IPv4 must be the final component and counts as two IPv6 groups.
+                if (index != groups.lastIndex || !isValidIpv4Literal(group)) return false
+                groupCount += 2
+            } else {
+                if (group.length !in 1..4 || group.any { it !in "0123456789abcdefABCDEF" }) return false
+                groupCount++
+            }
+        }
+        return if (hasCompression) groupCount < 8 else groupCount == 8
+    }
+
+    private fun isValidIpv4Literal(value: String): Boolean {
+        val octets = value.split('.')
+        if (octets.size != 4) return false
+        return octets.all { octet ->
+            octet.isNotEmpty() &&
+                octet.length <= 3 &&
+                octet.all(Char::isDigit) &&
+                octet.toIntOrNull()?.let { it in 0..255 } == true
+        }
     }
 
     private fun invalid(reason: LinkValidation.Reason) = LinkValidation.Invalid(reason)
