@@ -5,7 +5,6 @@ import android.database.sqlite.SQLiteDatabase as PlatformSQLiteDatabase
 import net.zetetic.database.sqlcipher.SQLiteDatabase as CipherDatabase
 import net.zetetic.database.sqlcipher.SQLiteOpenHelper
 import java.io.File
-import java.io.IOException
 
 /**
  * Converts the existing Room SQLite file into a separate SQLCipher file.
@@ -95,7 +94,8 @@ internal class DatabaseEncryptionMigrator(
     private fun migratePlaintextToEncrypted() {
         check(sourceFile.exists()) { "The plaintext database is missing" }
         temporaryFile.delete()
-        encryptedFile.delete()
+        // Do not destroy an existing encrypted database until the replacement is verified.
+        // If migration was previously interrupted, recovery chooses a verified file before retrying.
         val key = keyManager.getOrCreateDatabaseKey()
         try {
             val oldCounts: Map<String, Long>
@@ -140,6 +140,9 @@ internal class DatabaseEncryptionMigrator(
                 "Encrypted database verification failed"
             }
 
+            check(!encryptedFile.exists()) {
+                "Encrypted destination already exists and must be recovered before replacement"
+            }
             check(temporaryFile.renameTo(encryptedFile)) {
                 "Unable to atomically promote encrypted database file"
             }
@@ -149,9 +152,6 @@ internal class DatabaseEncryptionMigrator(
         } catch (exception: Exception) {
             // Keep the original database untouched. A partial destination is safe to discard.
             temporaryFile.delete()
-            if (encryptedFile.exists() && !canOpenEncrypted(encryptedFile, key)) {
-                encryptedFile.delete()
-            }
             throw IllegalStateException(
                 "Could not encrypt the existing database; plaintext data was retained",
                 exception,
