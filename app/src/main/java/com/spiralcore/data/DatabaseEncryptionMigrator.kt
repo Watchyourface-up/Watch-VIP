@@ -116,10 +116,7 @@ internal class DatabaseEncryptionMigrator(
                 val destination = helper.writableDatabase
                 try {
                     // SQLCipher's documented plaintext conversion path is ATTACH + sqlcipher_export.
-                    destination.execSQL(
-                        "ATTACH DATABASE ? AS plaintext KEY ''",
-                        arrayOf(sourceFile.absolutePath),
-                    )
+                    destination.execSQL("ATTACH DATABASE '${sourceFile.absolutePath.replace("'", "''")}' AS plaintext KEY ''")
                     destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use {
                         check(it.moveToFirst()) { "SQLCipher export did not return a result" }
                     }
