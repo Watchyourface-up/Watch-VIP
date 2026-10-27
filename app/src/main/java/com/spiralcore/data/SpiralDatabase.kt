@@ -44,7 +44,7 @@ abstract class SpiralDatabase : RoomDatabase() {
                     SpiralDatabase::class.java,
                     ENCRYPTED_DATABASE_NAME,
                 )
-                    .openHelperFactory(SupportOpenHelperFactory(key.copyOf()))
+                    .openHelperFactory(SupportOpenHelperFactory(key.copyOf(), null, false))
                     .addMigrations(MIGRATION_1_2)
                     .build()
 
