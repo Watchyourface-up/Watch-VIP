@@ -28,12 +28,41 @@ abstract class SpiralDatabase : RoomDatabase() {
                 ).addMigrations(MIGRATION_1_2).build().also { instance = it }
             }
 
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
+        /**
+         * Keep the earliest saved copy of each URL without dropping its original timestamp.
+         * Rows with a duplicate URL are folded into the row with the smallest id; its createdAt
+         * becomes the earliest createdAt among all rows for that normalized URL.
+         */
+        internal val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL(
-                    "DELETE FROM links WHERE id NOT IN (SELECT MIN(id) FROM links GROUP BY url)",
+                    """
+                    UPDATE links
+                    SET createdAt = (
+                        SELECT MIN(duplicate.createdAt)
+                        FROM links AS duplicate
+                        WHERE duplicate.url = links.url
+                    )
+                    WHERE id = (
+                        SELECT MIN(keeper.id)
+                        FROM links AS keeper
+                        WHERE keeper.url = links.url
+                    )
+                    """.trimIndent(),
                 )
-                database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_links_url ON links(url)")
+                database.execSQL(
+                    """
+                    DELETE FROM links
+                    WHERE id NOT IN (
+                        SELECT MIN(id)
+                        FROM links
+                        GROUP BY url
+                    )
+                    """.trimIndent(),
+                )
+                database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_links_url ON links(url)",
+                )
             }
         }
     }
