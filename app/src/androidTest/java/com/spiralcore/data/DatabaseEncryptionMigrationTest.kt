@@ -32,6 +32,7 @@ class DatabaseEncryptionMigrationTest {
         SQLiteDatabase.openOrCreateDatabase(source, null).use { db ->
             db.execSQL("CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL)")
             db.execSQL("CREATE TABLE links(id INTEGER PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL, categoryId INTEGER NOT NULL, createdAt INTEGER NOT NULL, shellSeed INTEGER NOT NULL)")
+            db.execSQL("PRAGMA user_version = 1")
             db.execSQL("CREATE INDEX index_links_categoryId ON links(categoryId)")
             db.execSQL("CREATE UNIQUE INDEX index_links_url ON links(url)")
             db.execSQL("CREATE UNIQUE INDEX index_links_shellSeed ON links(shellSeed)")
@@ -46,6 +47,18 @@ class DatabaseEncryptionMigrationTest {
         assertTrue(source.exists())
         assertTrue(encrypted.exists())
         assertEquals("encrypted_ready", preferences.getString("state", null))
+        CipherDatabase.loadLibs(context)
+        val keyForVersionCheck = keyManager.getOrCreateDatabaseKey()
+        try {
+            CipherDatabase.openOrCreateDatabase(encrypted, keyForVersionCheck, null).use { db ->
+                db.rawQuery("PRAGMA user_version", null).use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals("Room schema version must be preserved", 1, cursor.getInt(0))
+                }
+            }
+        } finally {
+            keyForVersionCheck.fill(0)
+        }
 
         CipherDatabase.loadLibs(context)
         val key = keyManager.getOrCreateDatabaseKey()
