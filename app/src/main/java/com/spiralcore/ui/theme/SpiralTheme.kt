@@ -1,33 +1,43 @@
 package com.spiralcore.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val Sand = Color(0xFFF5F1E8)
-val Paper = Color(0xFFFFFCF6)
-val DeepSea = Color(0xFF23695C)
-val DeepSeaDark = Color(0xFF174A42)
-val Coral = Color(0xFFCE8066)
-val Ink = Color(0xFF24332F)
-val MutedInk = Color(0xFF6C7771)
-val ShellLine = Color(0xFFB88768)
-val SoftMint = Color(0xFFE1EEE8)
-val SoftCoral = Color(0xFFF5E3DA)
+val Sand = Color(0xFF0B1422)
+val Paper = Color(0xFF162232)
+val DeepSea = Color(0xFF2EC4B6)
+val DeepSeaDark = Color(0xFFB7F3EC)
+val Coral = Color(0xFFD4B46A)
+val Ink = Color(0xFFE8EEF4)
+val MutedInk = Color(0xFF93A3B3)
+val ShellLine = Color(0xFFE4C77A)
+val SoftMint = Color(0xFF12383A)
+val SoftCoral = Color(0xFF3A3220)
 
-private val SpiralColors = lightColorScheme(
+private val NavyInk = Color(0xFF042226)
+
+private val SpiralColors = darkColorScheme(
     primary = DeepSea,
-    onPrimary = Color.White,
+    onPrimary = NavyInk,
+    primaryContainer = Color(0xFF134E4A),
+    onPrimaryContainer = Color(0xFFD5F7F3),
     secondary = Coral,
-    onSecondary = Color.White,
+    onSecondary = Color(0xFF2A220F),
+    secondaryContainer = SoftCoral,
+    onSecondaryContainer = Color(0xFFF6E7C4),
     background = Sand,
     onBackground = Ink,
     surface = Paper,
     onSurface = Ink,
-    surfaceVariant = SoftMint,
+    surfaceVariant = Color(0xFF1C2C3E),
     onSurfaceVariant = MutedInk,
-    error = Color(0xFFB3261E),
+    outline = Color(0xFF3E5366),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
 )
 
 @Composable

@@ -9,7 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.spiralcore.ui.theme.Sand
+import com.spiralcore.ui.theme.Ink
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 
@@ -41,8 +44,20 @@ fun SpiralCoreApp(
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Surface(
-            modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing),
-            color = Sand,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF163044),
+                            Color(0xFF0B1422),
+                            Color(0xFF070E16),
+                        ),
+                    ),
+                )
+                .windowInsetsPadding(WindowInsets.safeDrawing),
+            color = Color.Transparent,
+            contentColor = Ink,
         ) {
             if (unlocked) {
                 LibraryScreen()
