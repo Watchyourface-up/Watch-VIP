@@ -19,10 +19,24 @@ class MainActivity : FragmentActivity() {
     private lateinit var deviceCredentialLauncher: ActivityResultLauncher<Intent>
     private var credentialSuccess: (() -> Unit)? = null
     private var credentialFailure: ((String) -> Unit)? = null
+    private var activeBiometricPrompt: BiometricPrompt? = null
 
     override fun onSaveInstanceState(outState: Bundle) {
-        // Authentication state is intentionally never saved across recreation.
+        // Authentication state and success callbacks are intentionally never saved.
+        credentialSuccess = null
+        credentialFailure = null
+        activeBiometricPrompt?.cancelAuthentication()
+        activeBiometricPrompt = null
         super.onSaveInstanceState(outState)
+    }
+
+    override fun onStop() {
+        // Cancel an in-flight system biometric dialog if this Activity is backgrounded.
+        activeBiometricPrompt?.cancelAuthentication()
+        activeBiometricPrompt = null
+        credentialSuccess = null
+        credentialFailure = null
+        super.onStop()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,6 +114,7 @@ class MainActivity : FragmentActivity() {
             ContextCompat.getMainExecutor(this),
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    activeBiometricPrompt = null
                     onSuccess()
                 }
 
@@ -108,6 +123,7 @@ class MainActivity : FragmentActivity() {
                 }
 
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                    activeBiometricPrompt = null
                     if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_CANCELED &&
                         errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON
@@ -117,6 +133,7 @@ class MainActivity : FragmentActivity() {
                 }
             },
         )
+        activeBiometricPrompt = prompt
         prompt.authenticate(promptBuilder.build())
     }
 
