@@ -122,7 +122,21 @@ internal class DatabaseEncryptionMigrator(
                 oldCounts = tableCounts(source)
             }
 
-            SQLCipherMigrationHelper(appContext, temporaryFile, key).use { helper ->
+            val sourceVersion = PlatformSQLiteDatabase.openDatabase(
+                sourceFile.absolutePath,
+                null,
+                PlatformSQLiteDatabase.OPEN_READONLY,
+            ).use { source ->
+                source.rawQuery("PRAGMA user_version", null).use { cursor ->
+                    check(cursor.moveToFirst())
+                    cursor.getInt(0)
+                }
+            }
+            check(sourceVersion in 1..CURRENT_ROOM_VERSION) {
+                "Unsupported Room database version $sourceVersion; plaintext data was retained"
+            }
+
+            SQLCipherMigrationHelper(appContext, temporaryFile, key, sourceVersion).use { helper ->
                 val destination = helper.writableDatabase
                 try {
                     // SQLCipher's documented plaintext conversion path is ATTACH + sqlcipher_export.
@@ -237,13 +251,15 @@ internal class DatabaseEncryptionMigrator(
         context: Context,
         file: File,
         key: ByteArray,
-    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 2, 0, null, null, false) {
+        databaseVersion: Int,
+    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, databaseVersion, 0, null, null, false) {
         override fun onCreate(database: CipherDatabase) = Unit
         override fun onUpgrade(database: CipherDatabase, oldVersion: Int, newVersion: Int) = Unit
     }
 
     private companion object {
         const val PLAINTEXT_DATABASE_NAME = "spiralcore.db"
+        const val CURRENT_ROOM_VERSION = 2
         const val ENCRYPTED_DATABASE_NAME = "spiralcore.encrypted.db"
         const val PREFERENCES_NAME = "database_encryption_state"
         const val STATE_KEY = "state"
