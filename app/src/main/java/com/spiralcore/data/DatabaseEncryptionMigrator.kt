@@ -52,12 +52,10 @@ internal class DatabaseEncryptionMigrator(
 
         // Deletion happens only after the encrypted Room instance has opened successfully.
         // Failure to delete the source must not stop the application from using encrypted data.
-        if (sourceFile.exists() && !sourceFile.delete()) {
-            preferences.edit().putBoolean(PLAINTEXT_CLEANUP_PENDING, true).apply()
-        } else {
-            preferences.edit().remove(PLAINTEXT_CLEANUP_PENDING).apply()
-            deleteSqliteSidecars(sourceFile)
-        }
+        // Preserve the verified original file until a separate cleanup policy is implemented.
+        // Flash storage cannot guarantee forensic erasure; keeping it avoids an unsafe one-shot
+        // delete immediately after first successful open.
+        preferences.edit().putBoolean(PLAINTEXT_CLEANUP_PENDING, sourceFile.exists()).commit()
     }
 
     private fun encryptIfNeeded() {
@@ -233,7 +231,7 @@ internal class DatabaseEncryptionMigrator(
         context: Context,
         file: File,
         key: ByteArray,
-    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 2, null, null) {
+    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 2, 0, null, null, false) {
         override fun onCreate(database: CipherDatabase) = Unit
         override fun onUpgrade(database: CipherDatabase, oldVersion: Int, newVersion: Int) = Unit
     }
