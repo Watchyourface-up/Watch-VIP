@@ -27,12 +27,9 @@ class LinkRepository(private val dao: LinkDao) {
     suspend fun createLink(rawUrl: String, categoryId: Long): LinkValidation {
         val validation = LinkValidator.validate(rawUrl)
         if (validation !is LinkValidation.Valid) return validation
-        if (dao.urlExists(validation.url)) {
-            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
-        }
 
-        // Unique indexes are authoritative under concurrent requests; only map an actual URL
-        // collision to DUPLICATE rather than masking unrelated storage errors.
+        // The unique indexes are the source of truth. IGNORE returns -1 for a conflict
+        // (including a concurrent duplicate URL insert) without a preflight race.
         val seed = nextUniqueSeed()
         val insertedId = try {
             dao.insertLink(
@@ -45,13 +42,17 @@ class LinkRepository(private val dao: LinkDao) {
                 ),
             )
         } catch (exception: SQLiteConstraintException) {
+            // A shellSeed collision is rare but possible. Only translate a confirmed URL
+            // conflict to DUPLICATE; keep unrelated FK/constraint failures visible.
             if (dao.urlExists(validation.url)) {
                 return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
             }
             throw exception
         }
 
-        if (insertedId == -1L) return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+        if (insertedId == -1L) {
+            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+        }
         return validation
     }
 
