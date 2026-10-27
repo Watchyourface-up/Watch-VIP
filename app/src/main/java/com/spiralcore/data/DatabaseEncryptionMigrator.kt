@@ -165,6 +165,9 @@ internal class DatabaseEncryptionMigrator(
                     destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use {
                         check(it.moveToFirst()) { "SQLCipher export did not return a result" }
                     }
+                    // sqlcipher_export copies schema objects and user_version from the source.
+                    // Do not let the helper's target version overwrite the copied Room version.
+                    destination.execSQL("PRAGMA user_version = $sourceVersion")
                     destination.execSQL("DETACH DATABASE plaintext")
 
                     val newCounts = tableCounts(destination)
