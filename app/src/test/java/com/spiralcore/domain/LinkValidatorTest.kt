@@ -87,16 +87,22 @@ class LinkValidatorTest {
 
     @Test
     fun acceptsValidBracketedIpv6AndRejectsMalformedVariants() {
-        assertEquals(
-            LinkValidation.Valid("https://[2001:db8::1]/path", "[2001:db8::1]"),
-            LinkValidator.validate("https://[2001:DB8::1]/path"),
-        )
+        listOf(
+            "https://[2001:db8::1]/path",
+            "https://[::1]/",
+            "https://[2001:db8:0:1:2:3:4:5]/",
+            "https://[::ffff:192.0.2.1]/",
+        ).forEach { assertTrue("Expected acceptance: $it", LinkValidator.validate(it) is LinkValidation.Valid) }
         listOf(
             "https://[not-ipv6]/",
             "https://[2001:db8::1",
             "https://2001:db8::1/",
             "https://[::::]/",
             "https://[2001:db8::1]suffix/",
+            "https://[1:2:3:4:5:6:7:8:9]/",
+            "https://[1:2:3:4:5:6:7]/",
+            "https://[::ffff:999.0.2.1]/",
+            "https://[fe80::1%25eth0]/",
         ).forEach { assertTrue("Expected rejection: $it", LinkValidator.validate(it) is LinkValidation.Invalid) }
     }
 
