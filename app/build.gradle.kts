@@ -69,6 +69,9 @@ dependencies {
 
     implementation("androidx.biometric:biometric:1.1.0")
 
+    implementation("net.zetetic:sqlcipher-android:4.19.1@aar")
+    implementation("androidx.sqlite:sqlite:2.7.0")
+
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")
