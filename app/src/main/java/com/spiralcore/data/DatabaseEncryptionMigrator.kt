@@ -8,9 +8,8 @@ import java.io.File
 
 /**
  * Converts the existing Room SQLite file into a separate SQLCipher file.
- *
- * The plaintext source is never overwritten during conversion. The encrypted file is verified
- * before durable state changes, and plaintext is retained until encrypted Room opens successfully.
+ * Plaintext data is retained until the encrypted database has been independently verified
+ * and Room has opened the encrypted copy successfully.
  */
 internal class DatabaseEncryptionMigrator(
     context: Context,
@@ -37,12 +36,13 @@ internal class DatabaseEncryptionMigrator(
 
     @Synchronized
     fun markEncryptedDatabaseOpened() {
-        check(preferences.getString(STATE_KEY, STATE_PLAINTEXT) in setOf(
-            STATE_ENCRYPTED_READY,
-            STATE_ENCRYPTED_COMMITTED,
-        )) { "Encrypted database has not completed migration" }
+        check(
+            preferences.getString(STATE_KEY, STATE_PLAINTEXT) in setOf(
+                STATE_ENCRYPTED_READY,
+                STATE_ENCRYPTED_COMMITTED,
+            ),
+        ) { "Encrypted database has not completed migration" }
 
-        // Verify the file that Room opened before recording it as authoritative.
         verifyEncryptedFile()
         check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_COMMITTED).commit()) {
             "Unable to persist encrypted database state"
@@ -51,17 +51,15 @@ internal class DatabaseEncryptionMigrator(
     }
 
     private fun retryPlaintextCleanupIfNeeded() {
-        val alreadyCommitted = preferences.getString(STATE_KEY, STATE_PLAINTEXT) == STATE_ENCRYPTED_COMMITTED
-        if (!alreadyCommitted) return
+        if (preferences.getString(STATE_KEY, STATE_PLAINTEXT) != STATE_ENCRYPTED_COMMITTED) return
         val cleanupSucceeded = removePlaintextDatabase()
         check(
             preferences.edit()
                 .putBoolean(PLAINTEXT_CLEANUP_PENDING, !cleanupSucceeded)
                 .commit(),
         ) { "Unable to persist plaintext cleanup status" }
-
-        // Cleanup failure must not prevent the user opening their verified encrypted vault.
-        // It remains recorded and is retried on later launches. Never log URLs or key material.
+        // Failure is tracked and retried on subsequent launches; it must not block access to the
+        // already verified encrypted vault. Flash storage cannot guarantee forensic erasure.
     }
 
     private fun removePlaintextDatabase(): Boolean {
@@ -71,7 +69,7 @@ internal class DatabaseEncryptionMigrator(
             File(sourceFile.absolutePath + "-shm"),
             File(sourceFile.absolutePath + "-journal"),
         )
-        sidecars.forEach { file ->
+        for (file in sidecars) {
             if (file.exists() && !file.delete()) return false
         }
         return !sourceFile.exists() || sourceFile.delete()
@@ -84,7 +82,6 @@ internal class DatabaseEncryptionMigrator(
             }
             return
         }
-
         check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTING).commit()) {
             "Unable to persist migration start state"
         }
@@ -106,10 +103,8 @@ internal class DatabaseEncryptionMigrator(
                 "Unable to remove invalid encrypted destination; refusing to continue"
             }
         }
-        if (!sourceFile.exists()) {
-            throw IllegalStateException(
-                "Database migration was interrupted and neither a usable encrypted file nor the plaintext source exists",
-            )
+        check(sourceFile.exists()) {
+            "Database migration was interrupted and neither a usable encrypted file nor plaintext source exists"
         }
         temporaryFile.delete()
         encryptedFile.delete()
@@ -145,8 +140,6 @@ internal class DatabaseEncryptionMigrator(
             SQLCipherMigrationHelper(appContext, temporaryFile, key, sourceVersion).use { helper ->
                 val destination = helper.writableDatabase
                 try {
-                    // Source filename comes from Android's app-private database directory.
-                    // Quote as a SQL string literal and escape embedded apostrophes.
                     val escapedSource = sourceFile.absolutePath.replace("'", "''")
                     destination.execSQL("ATTACH DATABASE '$escapedSource' AS plaintext KEY ''")
                     destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use { cursor ->
@@ -230,7 +223,10 @@ internal class DatabaseEncryptionMigrator(
         ).use { cursor ->
             while (cursor.moveToNext()) {
                 val table = cursor.getString(0)
-                database.rawQuery("SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"", null).use { countCursor ->
+                database.rawQuery(
+                    "SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"",
+                    null,
+                ).use { countCursor ->
                     check(countCursor.moveToFirst())
                     tables[table] = countCursor.getLong(0)
                 }
@@ -247,7 +243,10 @@ internal class DatabaseEncryptionMigrator(
         ).use { cursor ->
             while (cursor.moveToNext()) {
                 val table = cursor.getString(0)
-                database.rawQuery("SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"", null).use { countCursor ->
+                database.rawQuery(
+                    "SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"",
+                    null,
+                ).use { countCursor ->
                     check(countCursor.moveToFirst())
                     tables[table] = countCursor.getLong(0)
                 }
