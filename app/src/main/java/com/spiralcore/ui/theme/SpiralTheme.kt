@@ -5,29 +5,50 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val Sand = Color(0xFFF5F1E8)
-val Paper = Color(0xFFFFFCF6)
-val DeepSea = Color(0xFF23695C)
-val DeepSeaDark = Color(0xFF174A42)
-val Coral = Color(0xFFCE8066)
-val Ink = Color(0xFF24332F)
-val MutedInk = Color(0xFF6C7771)
-val ShellLine = Color(0xFFB88768)
-val SoftMint = Color(0xFFE1EEE8)
-val SoftCoral = Color(0xFFF5E3DA)
+// Global SpiralCore palette
+val BrandOrange = Color(0xFFE65100)
+val AlertRed = Color(0xFFD32F2F)
+val PureWhite = Color(0xFFFFFFFF)
+val SecondaryGray = Color(0xFFF5F5F5)
+val SoftBlack = Color(0xFF2B2B2B)
+val MutedGray = Color(0xFF757575)
+val OrangeTint = Color(0xFFFFE5D6)
+val RedTint = Color(0xFFFFEBEE)
+val ShellStroke = Color(0xFFB94B12)
+
+// Backward-compatible semantic aliases used by existing UI components.
+val Sand = PureWhite
+val Paper = PureWhite
+val DeepSea = BrandOrange
+val DeepSeaDark = Color(0xFFB83F00)
+val Coral = AlertRed
+val Ink = SoftBlack
+val MutedInk = MutedGray
+val ShellLine = ShellStroke
+val SoftMint = SecondaryGray
+val SoftCoral = RedTint
 
 private val SpiralColors = lightColorScheme(
-    primary = DeepSea,
-    onPrimary = Color.White,
-    secondary = Coral,
-    onSecondary = Color.White,
-    background = Sand,
-    onBackground = Ink,
-    surface = Paper,
-    onSurface = Ink,
-    surfaceVariant = SoftMint,
-    onSurfaceVariant = MutedInk,
-    error = Color(0xFFB3261E),
+    primary = BrandOrange,
+    onPrimary = PureWhite,
+    primaryContainer = OrangeTint,
+    onPrimaryContainer = SoftBlack,
+    secondary = AlertRed,
+    onSecondary = PureWhite,
+    secondaryContainer = RedTint,
+    onSecondaryContainer = SoftBlack,
+    background = PureWhite,
+    onBackground = SoftBlack,
+    surface = PureWhite,
+    onSurface = SoftBlack,
+    surfaceVariant = SecondaryGray,
+    onSurfaceVariant = MutedGray,
+    error = AlertRed,
+    errorContainer = RedTint,
+    onError = PureWhite,
+    onErrorContainer = Color(0xFF8E1B1B),
+    outline = Color(0xFFBDBDBD),
+    outlineVariant = Color(0xFFE0E0E0),
 )
 
 @Composable
