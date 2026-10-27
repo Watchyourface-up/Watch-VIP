@@ -27,6 +27,7 @@ class DatabaseEncryptionMigrationTest {
         encrypted.delete()
         File(encrypted.parentFile, "${encrypted.name}.migrating").delete()
         preferences.edit().clear().commit()
+        context.getSharedPreferences("database_key_metadata", Context.MODE_PRIVATE).edit().clear().commit()
 
         SQLiteDatabase.openOrCreateDatabase(source, null).use { db ->
             db.execSQL("CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL)")
