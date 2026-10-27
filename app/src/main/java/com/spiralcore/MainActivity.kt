@@ -31,7 +31,7 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onStop() {
-        // Cancel an in-flight system biometric dialog if this Activity is backgrounded.
+        // Cancel an in-flight biometric dialog if this Activity is backgrounded.
         activeBiometricPrompt?.cancelAuthentication()
         activeBiometricPrompt = null
         credentialSuccess = null
