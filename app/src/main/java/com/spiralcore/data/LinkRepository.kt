@@ -28,32 +28,42 @@ class LinkRepository(private val dao: LinkDao) {
         val validation = LinkValidator.validate(rawUrl)
         if (validation !is LinkValidation.Valid) return validation
 
-        // The unique indexes are the source of truth. IGNORE returns -1 for a conflict
-        // (including a concurrent duplicate URL insert) without a preflight race.
-        val seed = nextUniqueSeed()
-        val insertedId = try {
-            dao.insertLink(
-                LinkEntity(
-                    url = validation.url,
-                    title = validation.host,
-                    categoryId = categoryId,
-                    createdAt = System.currentTimeMillis(),
-                    shellSeed = seed,
-                ),
-            )
-        } catch (exception: SQLiteConstraintException) {
-            // A shellSeed collision is rare but possible. Only translate a confirmed URL
-            // conflict to DUPLICATE; keep unrelated FK/constraint failures visible.
+        // Unique indexes are authoritative for URL uniqueness. Do not pre-check URL existence:
+        // two concurrent callers must race safely at the SQLite constraint instead.
+        repeat(MAX_INSERT_ATTEMPTS) { attempt ->
+            val seed = nextUniqueSeed()
+            val insertedId = try {
+                dao.insertLink(
+                    LinkEntity(
+                        url = validation.url,
+                        title = validation.host,
+                        categoryId = categoryId,
+                        createdAt = System.currentTimeMillis(),
+                        shellSeed = seed,
+                    ),
+                )
+            } catch (exception: SQLiteConstraintException) {
+                // RESTRICT/FK errors and non-URL constraints must not be mislabeled as duplicates.
+                if (dao.urlExists(validation.url)) {
+                    return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
+                }
+                if (attempt < MAX_INSERT_ATTEMPTS - 1 && dao.shellSeedExists(seed)) {
+                    return@repeat
+                }
+                throw exception
+            }
+
+            if (insertedId != -1L) return validation
+
+            // INSERT OR IGNORE can return -1 for a URL conflict or a shellSeed collision.
             if (dao.urlExists(validation.url)) {
                 return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
             }
-            throw exception
+            if (!dao.shellSeedExists(seed)) {
+                throw IllegalStateException("Link insert was ignored without a URL or seed conflict")
+            }
         }
-
-        if (insertedId == -1L) {
-            return LinkValidation.Invalid(LinkValidation.Reason.DUPLICATE)
-        }
-        return validation
+        throw IllegalStateException("Could not allocate a unique shell seed for link insertion")
     }
 
     private suspend fun nextUniqueSeed(): Int {
@@ -70,5 +80,6 @@ class LinkRepository(private val dao: LinkDao) {
 
     private companion object {
         const val MAX_SEED_ATTEMPTS = 16
+        const val MAX_INSERT_ATTEMPTS = 3
     }
 }
