@@ -76,13 +76,20 @@ internal class DatabaseEncryptionMigrator(
         // Keep the plaintext source. A valid final file can be recovered; partial temporary
         // files are disposable only while the plaintext source remains available.
         if (encryptedFile.exists()) {
-            check(canOpenEncrypted(encryptedFile)) {
-                "An encrypted destination exists but cannot be verified; refusing to overwrite or delete it"
+            // A failed/incomplete ciphertext can be removed only if the plaintext source is
+            // still present and recovery is possible. A valid encrypted database is never replaced.
+            if (canOpenEncrypted(encryptedFile)) {
+                check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
+                    "Unable to persist recovered encrypted database state"
+                }
+                return
             }
-            check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
-                "Unable to persist recovered encrypted database state"
+            check(sourceFile.exists()) {
+                "Encrypted destination cannot be verified and the plaintext source is missing"
             }
-            return
+            check(encryptedFile.delete()) {
+                "Unable to remove invalid encrypted destination; refusing to continue"
+            }
         }
         if (!sourceFile.exists()) {
             throw IllegalStateException(
