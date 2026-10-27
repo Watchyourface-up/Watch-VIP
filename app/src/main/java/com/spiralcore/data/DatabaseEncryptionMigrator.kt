@@ -9,10 +9,8 @@ import java.io.File
 /**
  * Converts the existing Room SQLite file into a separate SQLCipher file.
  *
- * The plaintext source is never overwritten. The encrypted file is verified before the durable
- * state advances to ENCRYPTED_READY. Once this state is committed, future launches prefer the
- * encrypted file. The plaintext source is retained until encrypted Room successfully opens and
- * the application explicitly calls markEncryptedDatabaseOpened().
+ * The plaintext source is never overwritten during conversion. The encrypted file is verified
+ * before durable state changes, and plaintext is retained until encrypted Room opens successfully.
  */
 internal class DatabaseEncryptionMigrator(
     context: Context,
@@ -29,6 +27,7 @@ internal class DatabaseEncryptionMigrator(
         when (preferences.getString(STATE_KEY, STATE_PLAINTEXT)) {
             STATE_ENCRYPTED_READY, STATE_ENCRYPTED_COMMITTED -> {
                 verifyEncryptedFile()
+                retryPlaintextCleanupIfNeeded()
             }
             STATE_PLAINTEXT -> encryptIfNeeded()
             STATE_ENCRYPTING -> recoverInterruptedMigration()
@@ -43,29 +42,30 @@ internal class DatabaseEncryptionMigrator(
             STATE_ENCRYPTED_COMMITTED,
         )) { "Encrypted database has not completed migration" }
 
+        // Verify the file that Room opened before recording it as authoritative.
         verifyEncryptedFile()
         check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_COMMITTED).commit()) {
             "Unable to persist encrypted database state"
         }
+        retryPlaintextCleanupIfNeeded()
+    }
 
-        // Best-effort removal of plaintext only after Room has successfully opened and queried
-        // the encrypted database. Flash storage cannot guarantee forensic erasure, but retaining
-        // the old file indefinitely would leave sensitive records readable outside SQLCipher.
+    private fun retryPlaintextCleanupIfNeeded() {
+        val alreadyCommitted = preferences.getString(STATE_KEY, STATE_PLAINTEXT) == STATE_ENCRYPTED_COMMITTED
+        if (!alreadyCommitted) return
         val cleanupSucceeded = removePlaintextDatabase()
         check(
             preferences.edit()
                 .putBoolean(PLAINTEXT_CLEANUP_PENDING, !cleanupSucceeded)
                 .commit(),
         ) { "Unable to persist plaintext cleanup status" }
-        check(cleanupSucceeded || !sourceFile.exists()) {
-            "Encrypted database is ready, but plaintext database cleanup failed; retry on next launch"
-        }
+
+        // Cleanup failure must not prevent the user opening their verified encrypted vault.
+        // It remains recorded and is retried on later launches. Never log URLs or key material.
     }
 
     private fun removePlaintextDatabase(): Boolean {
         if (!sourceFile.exists()) return true
-        // Remove sidecars only once Room has closed all existing database handles. The app opens
-        // the encrypted database under a different name, so the plaintext DB is not in use here.
         val sidecars = listOf(
             File(sourceFile.absolutePath + "-wal"),
             File(sourceFile.absolutePath + "-shm"),
@@ -79,7 +79,6 @@ internal class DatabaseEncryptionMigrator(
 
     private fun encryptIfNeeded() {
         if (!sourceFile.exists()) {
-            // First install: no plaintext database exists, so Room may create a fresh encrypted DB.
             check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
                 "Unable to persist initial encrypted database state"
             }
@@ -93,11 +92,7 @@ internal class DatabaseEncryptionMigrator(
     }
 
     private fun recoverInterruptedMigration() {
-        // Keep the plaintext source. A valid final file can be recovered; partial temporary
-        // files are disposable only while the plaintext source remains available.
         if (encryptedFile.exists()) {
-            // A failed/incomplete ciphertext can be removed only if the plaintext source is
-            // still present and recovery is possible. A valid encrypted database is never replaced.
             if (canOpenEncrypted(encryptedFile)) {
                 check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
                     "Unable to persist recovered encrypted database state"
@@ -124,12 +119,10 @@ internal class DatabaseEncryptionMigrator(
     private fun migratePlaintextToEncrypted() {
         check(sourceFile.exists()) { "The plaintext database is missing" }
         temporaryFile.delete()
-        // Do not destroy an existing encrypted database until the replacement is verified.
-        // If migration was previously interrupted, recovery chooses a verified file before retrying.
         val key = keyManager.getOrCreateDatabaseKey()
         try {
             val oldCounts: Map<String, Long>
-            PlatformSQLiteDatabase.openDatabase(
+            val sourceVersion = PlatformSQLiteDatabase.openDatabase(
                 sourceFile.absolutePath,
                 null,
                 PlatformSQLiteDatabase.OPEN_READONLY,
@@ -140,13 +133,6 @@ internal class DatabaseEncryptionMigrator(
                     }
                 }
                 oldCounts = tableCounts(source)
-            }
-
-            val sourceVersion = PlatformSQLiteDatabase.openDatabase(
-                sourceFile.absolutePath,
-                null,
-                PlatformSQLiteDatabase.OPEN_READONLY,
-            ).use { source ->
                 source.rawQuery("PRAGMA user_version", null).use { cursor ->
                     check(cursor.moveToFirst())
                     cursor.getInt(0)
@@ -159,18 +145,17 @@ internal class DatabaseEncryptionMigrator(
             SQLCipherMigrationHelper(appContext, temporaryFile, key, sourceVersion).use { helper ->
                 val destination = helper.writableDatabase
                 try {
-                    // SQLCipher's documented plaintext conversion path is ATTACH + sqlcipher_export.
-                    destination.execSQL("ATTACH DATABASE '${sourceFile.absolutePath.replace("'", "''")}' AS plaintext KEY ''")
-                    destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use {
-                        check(it.moveToFirst()) { "SQLCipher export did not return a result" }
+                    // Source filename comes from Android's app-private database directory.
+                    // Quote as a SQL string literal and escape embedded apostrophes.
+                    val escapedSource = sourceFile.absolutePath.replace("'", "''")
+                    destination.execSQL("ATTACH DATABASE '$escapedSource' AS plaintext KEY ''")
+                    destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use { cursor ->
+                        check(cursor.moveToFirst()) { "SQLCipher export did not return a result" }
                     }
-                    // sqlcipher_export copies schema objects and user_version from the source.
-                    // Do not let the helper's target version overwrite the copied Room version.
                     destination.execSQL("PRAGMA user_version = $sourceVersion")
                     destination.execSQL("DETACH DATABASE plaintext")
 
-                    val newCounts = tableCounts(destination)
-                    check(oldCounts == newCounts) {
+                    check(oldCounts == tableCounts(destination)) {
                         "Database verification failed after encryption export"
                     }
                     destination.rawQuery("PRAGMA integrity_check", null).use { cursor ->
@@ -183,10 +168,7 @@ internal class DatabaseEncryptionMigrator(
                 }
             }
 
-            check(canOpenEncrypted(temporaryFile, key)) {
-                "Encrypted database verification failed"
-            }
-
+            check(canOpenEncrypted(temporaryFile, key)) { "Encrypted database verification failed" }
             check(!encryptedFile.exists()) {
                 "Encrypted destination already exists and must be recovered before replacement"
             }
@@ -197,7 +179,6 @@ internal class DatabaseEncryptionMigrator(
                 "Unable to persist successful encryption migration state"
             }
         } catch (exception: Exception) {
-            // Keep the original database untouched. A partial destination is safe to discard.
             temporaryFile.delete()
             throw IllegalStateException(
                 "Could not encrypt the existing database; plaintext data was retained",
@@ -258,7 +239,7 @@ internal class DatabaseEncryptionMigrator(
         return tables
     }
 
-    private fun tableCounts(database: net.zetetic.database.sqlcipher.SQLiteDatabase): Map<String, Long> {
+    private fun tableCounts(database: CipherDatabase): Map<String, Long> {
         val tables = linkedMapOf<String, Long>()
         database.rawQuery(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
