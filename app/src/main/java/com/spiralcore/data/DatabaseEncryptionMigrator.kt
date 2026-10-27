@@ -2,7 +2,6 @@ package com.spiralcore.data
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase as PlatformSQLiteDatabase
-import android.util.Base64
 import net.zetetic.database.sqlcipher.SQLiteDatabase as CipherDatabase
 import net.zetetic.database.sqlcipher.SQLiteOpenHelper
 import java.io.File
@@ -114,15 +113,12 @@ internal class DatabaseEncryptionMigrator(
                 }
                 val oldCounts = tableCounts(source)
 
-                // SQLCipher's documented conversion operation is an attached encrypted
-                // database plus sqlcipher_export; rekeying alone does not encrypt plaintext.
-                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
+                // Attach the plaintext database to SQLCipher, then export the attached source
+                // into the encrypted main database.
                 try {
-                    val export = destination.rawQuery(
-                        "SELECT sqlcipher_export('main')",
-                        null,
-                    )
-                    export.use { it.moveToFirst() }
+                    destination.execSQL("ATTACH DATABASE ? AS plaintext KEY ''", arrayOf(sourceFile.absolutePath))
+                    destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use { it.moveToFirst() }
+                    destination.execSQL("DETACH DATABASE plaintext")
 
                     val newCounts = tableCounts(destination)
                     check(oldCounts == newCounts) { "Database verification failed after encryption export" }
@@ -230,7 +226,7 @@ internal class DatabaseEncryptionMigrator(
         context: Context,
         file: File,
         key: ByteArray,
-    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 1, null, null) {
+    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 2, null, null) {
         override fun onCreate(database: CipherDatabase) = Unit
         override fun onUpgrade(database: CipherDatabase, oldVersion: Int, newVersion: Int) = Unit
     }
