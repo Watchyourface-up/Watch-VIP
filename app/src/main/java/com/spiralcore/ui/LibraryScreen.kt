@@ -111,32 +111,62 @@ fun LibraryScreen() {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Row(
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                shape = RoundedCornerShape(28.dp),
+                color = MaterialTheme.colorScheme.primaryContainer,
             ) {
-                Column {
-                    Text(
-                        text = "SpiralCore",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = DeepSea,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Spacer(Modifier.height(5.dp))
-                    Text(
-                        text = "روابطك.",
-                        style = MaterialTheme.typography.headlineLarge,
-                        color = Ink,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = "كل رابط له قوقعته الخاصة.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MutedInk,
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 22.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = MaterialTheme.colorScheme.primary,
+                        ) {
+                            Text(
+                                text = "SPIRALCORE • خزنتك الخاصة",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "روابطك، بأمان.",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Ink,
+                            fontWeight = FontWeight.ExtraBold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "كل رابط له قوقعته الخاصة.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MutedInk,
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            text = "${links.size} رابط محفوظ",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = DeepSeaDark,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(22.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                    ) {
+                        ShellMark(
+                            seed = 0x5A17,
+                            modifier = Modifier.padding(10.dp),
+                            size = 64.dp,
+                        )
+                    }
                 }
-                ShellMark(seed = 0x5A17, size = 64.dp)
             }
         }
 
