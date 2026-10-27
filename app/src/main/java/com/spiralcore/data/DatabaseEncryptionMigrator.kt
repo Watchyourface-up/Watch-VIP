@@ -176,10 +176,15 @@ internal class DatabaseEncryptionMigrator(
         val helper = SQLCipherMigrationHelper(appContext, file, key)
         helper.writableDatabase.use { database ->
             database.rawQuery("PRAGMA cipher_integrity_check", null).use { cursor ->
-                cursor.moveToFirst()
+                check(cursor.moveToFirst())
+                do {
+                    check(cursor.getString(0).equals("ok", ignoreCase = true)) {
+                        "Encrypted database integrity check failed"
+                    }
+                } while (cursor.moveToNext())
             }
             database.rawQuery("SELECT count(*) FROM sqlite_master", null).use { cursor ->
-                cursor.moveToFirst()
+                check(cursor.moveToFirst()) { "Encrypted database schema is unreadable" }
             }
         }
         true
