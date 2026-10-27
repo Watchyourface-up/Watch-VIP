@@ -52,7 +52,9 @@ jobs:
           curl --fail --silent --show-error --location "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" --output /tmp/gitleaks.tar.gz
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
           if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
-            /tmp/gitleaks detect --source . --log-opts="${GITHUB_EVENT_PULL_REQUEST_BASE_SHA}..${GITHUB_SHA}" --redact --no-banner --exit-code 1
+            BASE_SHA="$(jq -er '.pull_request.base.sha' "$GITHUB_EVENT_PATH")"
+            git cat-file -e "${BASE_SHA}^{commit}"
+            /tmp/gitleaks git --log-opts="${BASE_SHA}..${GITHUB_SHA}" --redact --no-banner --exit-code 1 .
           else
             /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1
           fi
