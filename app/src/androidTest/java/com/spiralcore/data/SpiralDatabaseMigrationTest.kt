@@ -24,7 +24,6 @@ class SpiralDatabaseMigrationTest {
     fun migrationDeduplicatesAndPreservesEarliestTimestamp() {
         helper.createDatabase(dbName, 1).apply {
             execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'Personal', 0)")
-            execSQL("INSERT INTO categories(id, name, position) VALUES (2, 'Work', 1)")
             execSQL(
                 "INSERT INTO links(id, url, title, categoryId, createdAt, shellSeed) " +
                     "VALUES (1, 'https://example.com/', 'example.com', 1, 300, 11)",
