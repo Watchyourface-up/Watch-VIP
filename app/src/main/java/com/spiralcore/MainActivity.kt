@@ -27,13 +27,15 @@ class MainActivity : FragmentActivity() {
         deviceCredentialLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult(),
         ) { result ->
-            if (result.resultCode == RESULT_OK) {
-                credentialSuccess?.invoke()
-            } else {
-                credentialFailure?.invoke("لم يتم فتح الخزنة.")
-            }
+            val success = credentialSuccess
+            val failure = credentialFailure
             credentialSuccess = null
             credentialFailure = null
+            if (result.resultCode == RESULT_OK) {
+                success?.invoke()
+            } else {
+                failure?.invoke("لم يتم فتح الخزنة.")
+            }
         }
 
         setContent {
@@ -56,16 +58,20 @@ class MainActivity : FragmentActivity() {
             return
         }
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R && deviceCredentialOnly) {
-            launchLegacyDeviceCredential(keyguard, onSuccess, onFailure)
-            return
-        }
-
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R &&
-            BiometricManager.from(this).canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) != BiometricManager.BIOMETRIC_SUCCESS
-        ) {
-            onFailure("البصمة غير جاهزة على هذا الهاتف. استخدم PIN الهاتف.")
-            return
+        // Before Android 11, the system biometric prompt cannot combine BIOMETRIC_STRONG
+        // and DEVICE_CREDENTIAL. Keep the explicit credential path usable even without biometrics.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            if (deviceCredentialOnly) {
+                launchLegacyDeviceCredential(keyguard, onSuccess, onFailure)
+                return
+            }
+            val biometricAvailable = BiometricManager.from(this).canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG,
+            ) == BiometricManager.BIOMETRIC_SUCCESS
+            if (!biometricAvailable) {
+                onFailure("البصمة غير جاهزة على هذا الهاتف. استخدم زر PIN الهاتف.")
+                return
+            }
         }
 
         val allowedAuthenticators = when {
@@ -76,7 +82,6 @@ class MainActivity : FragmentActivity() {
                     BiometricManager.Authenticators.DEVICE_CREDENTIAL
             else -> BiometricManager.Authenticators.BIOMETRIC_STRONG
         }
-
         val promptBuilder = BiometricPrompt.PromptInfo.Builder()
             .setTitle(if (deviceCredentialOnly) "رمز قفل الهاتف" else "افتح SpiralCore")
             .setSubtitle(if (deviceCredentialOnly) "تحقق ببيانات اعتماد الجهاز" else "استخدم البصمة أو PIN الهاتف")
@@ -126,6 +131,12 @@ class MainActivity : FragmentActivity() {
         }
         credentialSuccess = onSuccess
         credentialFailure = onFailure
-        deviceCredentialLauncher.launch(intent)
+        try {
+            deviceCredentialLauncher.launch(intent)
+        } catch (_: RuntimeException) {
+            credentialSuccess = null
+            credentialFailure = null
+            onFailure("تعذر بدء تحقق PIN الهاتف.")
+        }
     }
 }

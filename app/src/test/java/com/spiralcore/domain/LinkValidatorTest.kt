@@ -7,25 +7,25 @@ import org.junit.Test
 class LinkValidatorTest {
     @Test
     fun addsHttpsToBareDomain() {
-        val result = LinkValidator.validate("example.com")
-        assertEquals(LinkValidation.Valid("https://example.com/", "example.com"), result)
+        assertEquals(
+            LinkValidation.Valid("https://example.com/", "example.com"),
+            LinkValidator.validate("example.com"),
+        )
     }
 
     @Test
     fun preservesPathQueryAndFragment() {
-        val result = LinkValidator.validate("https://example.com/a?q=1#part")
         assertEquals(
             LinkValidation.Valid("https://example.com/a?q=1#part", "example.com"),
-            result,
+            LinkValidator.validate("https://example.com/a?q=1#part"),
         )
     }
 
     @Test
     fun acceptsBareDomainWithPort() {
-        val result = LinkValidator.validate("example.com:8443/page")
         assertEquals(
             LinkValidation.Valid("https://example.com:8443/page", "example.com"),
-            result,
+            LinkValidator.validate("example.com:8443/page"),
         )
     }
 
@@ -37,29 +37,59 @@ class LinkValidatorTest {
     }
 
     @Test
-    fun rejectsJavascriptAndOtherUnsupportedSchemes() {
-        val result = LinkValidator.validate("javascript:alert(1)")
-        assertEquals(
-            LinkValidation.Invalid(LinkValidation.Reason.UNSUPPORTED_SCHEME),
-            result,
-        )
+    fun rejectsUnsupportedSchemes() {
+        listOf("javascript:alert(1)", "file:///etc/passwd", "intent://example.com").forEach {
+            assertEquals(
+                LinkValidation.Invalid(LinkValidation.Reason.UNSUPPORTED_SCHEME),
+                LinkValidator.validate(it),
+            )
+        }
     }
 
     @Test
     fun rejectsCredentialsEmbeddedInUrl() {
-        val result = LinkValidator.validate("https://user:secret@example.com/private")
         assertEquals(
             LinkValidation.Invalid(LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED),
-            result,
+            LinkValidator.validate("https://user:secret@example.com/private"),
         )
     }
 
     @Test
     fun rejectsMalformedAndEmptyInput() {
-        assertEquals(
-            LinkValidation.Invalid(LinkValidation.Reason.EMPTY),
-            LinkValidator.validate("  "),
-        )
+        assertEquals(LinkValidation.Invalid(LinkValidation.Reason.EMPTY), LinkValidator.validate("  "))
         assertTrue(LinkValidator.validate("https://") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com:0/") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com:65536/") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com:/") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com:abc/") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com\\n.evil") is LinkValidation.Invalid)
+    }
+
+    @Test
+    fun rejectsControlCharactersAndOversizedUrls() {
+        assertTrue(LinkValidator.validate("https://example.com/\u0000x") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://example.com/" + "a".repeat(9_000)) is LinkValidation.Invalid)
+    }
+
+    @Test
+    fun rejectsMalformedIpv6LiteralAndUnbracketedIpv6() {
+        assertTrue(LinkValidator.validate("https://[not-ipv6]/") is LinkValidation.Invalid)
+        assertTrue(LinkValidator.validate("https://2001:db8::1/") is LinkValidation.Invalid)
+    }
+
+    @Test
+    fun normalizesSchemeAndHostCase() {
+        assertEquals(
+            LinkValidation.Valid("https://example.com/Path", "example.com"),
+            LinkValidator.validate("HTTPS://ExAmPlE.CoM/Path"),
+        )
+    }
+
+    @Test
+    fun rejectsLookalikeAuthorityWithCredentials() {
+        assertEquals(
+            LinkValidation.Invalid(LinkValidation.Reason.CREDENTIALS_NOT_ALLOWED),
+            LinkValidator.validate("https://example.com@evil.example/"),
+        )
     }
 }
