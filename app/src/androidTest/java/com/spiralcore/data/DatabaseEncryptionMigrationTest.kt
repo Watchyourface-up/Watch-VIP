@@ -17,6 +17,10 @@ class DatabaseEncryptionMigrationTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
+    private fun loadCipher() {
+        System.loadLibrary("sqlcipher")
+    }
+
     @Test
     fun existingPlaintextDatabaseIsCopiedAndVerifiedBeforeUse() {
         val source = context.getDatabasePath("spiralcore.db")
@@ -47,7 +51,7 @@ class DatabaseEncryptionMigrationTest {
         assertTrue(source.exists())
         assertTrue(encrypted.exists())
         assertEquals("encrypted_ready", preferences.getString("state", null))
-        CipherDatabase.loadLibs(context)
+        loadCipher()
         val keyForVersionCheck = keyManager.getOrCreateDatabaseKey()
         try {
             CipherDatabase.openOrCreateDatabase(encrypted, keyForVersionCheck, null).use { db ->
@@ -60,11 +64,9 @@ class DatabaseEncryptionMigrationTest {
             keyForVersionCheck.fill(0)
         }
 
-        CipherDatabase.loadLibs(context)
         val key = keyManager.getOrCreateDatabaseKey()
         try {
-            val database = CipherDatabase.openOrCreateDatabase(encrypted, key, null)
-            database.use { db ->
+            CipherDatabase.openOrCreateDatabase(encrypted, key, null).use { db ->
                 db.rawQuery("SELECT COUNT(*) FROM links", null).use { cursor ->
                     assertTrue(cursor.moveToFirst())
                     assertEquals(1, cursor.getInt(0))
@@ -97,11 +99,10 @@ class DatabaseEncryptionMigrationTest {
         }
         val manager = DatabaseKeyManager(context)
         DatabaseEncryptionMigrator(context, manager).prepareEncryptedDatabase()
-        CipherDatabase.loadLibs(context)
+        loadCipher()
         val correctKey = manager.getOrCreateDatabaseKey()
         val wrongKey = ByteArray(32) { (it + 1).toByte() }
         try {
-            // First prove the encrypted file opens with its legitimate key.
             CipherDatabase.openOrCreateDatabase(encrypted, correctKey, null).use { db ->
                 db.rawQuery("SELECT COUNT(*) FROM sqlite_master", null).use { cursor ->
                     assertTrue(cursor.moveToFirst())
@@ -144,7 +145,6 @@ class DatabaseEncryptionMigrationTest {
             db.execSQL("INSERT INTO categories VALUES(1, 'شخصي', 0)")
             db.execSQL("INSERT INTO links VALUES(1, 'https://resume.example/', 'resume.example', 1, 123, 21)")
         }
-        // A partial encrypted destination is intentionally not valid.
         temporary.writeBytes(byteArrayOf(1, 2, 3, 4))
 
         DatabaseEncryptionMigrator(context, DatabaseKeyManager(context)).prepareEncryptedDatabase()
@@ -189,5 +189,4 @@ class DatabaseEncryptionMigrationTest {
             database.close()
         }
     }
-
 }
