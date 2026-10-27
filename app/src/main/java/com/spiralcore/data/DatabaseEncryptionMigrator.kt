@@ -1,0 +1,249 @@
+package com.spiralcore.data
+
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase as PlatformSQLiteDatabase
+import android.util.Base64
+import net.zetetic.database.sqlcipher.SQLiteDatabase as CipherDatabase
+import net.zetetic.database.sqlcipher.SQLiteOpenHelper
+import java.io.File
+import java.io.IOException
+
+/**
+ * Converts the existing Room SQLite file into a separate SQLCipher file.
+ *
+ * The plaintext source is never overwritten. The encrypted file is verified before the durable
+ * state advances to ENCRYPTED_READY. Once this state is committed, future launches prefer the
+ * encrypted file. The plaintext source is retained until encrypted Room successfully opens and
+ * the application explicitly calls markEncryptedDatabaseOpened().
+ */
+internal class DatabaseEncryptionMigrator(
+    context: Context,
+    private val keyManager: DatabaseKeyManager,
+) {
+    private val appContext = context.applicationContext
+    private val preferences = appContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+    private val sourceFile = appContext.getDatabasePath(PLAINTEXT_DATABASE_NAME)
+    private val encryptedFile = appContext.getDatabasePath(ENCRYPTED_DATABASE_NAME)
+    private val temporaryFile = File(encryptedFile.parentFile, "${encryptedFile.name}.migrating")
+
+    @Synchronized
+    fun prepareEncryptedDatabase() {
+        CipherDatabase.loadLibs(appContext)
+        when (preferences.getString(STATE_KEY, STATE_PLAINTEXT)) {
+            STATE_ENCRYPTED_READY, STATE_ENCRYPTED_COMMITTED -> {
+                verifyEncryptedFile()
+            }
+            STATE_PLAINTEXT -> encryptIfNeeded()
+            STATE_ENCRYPTING -> recoverInterruptedMigration()
+            else -> throw IllegalStateException("Unknown database encryption migration state")
+        }
+    }
+
+    @Synchronized
+    fun markEncryptedDatabaseOpened() {
+        check(preferences.getString(STATE_KEY, STATE_PLAINTEXT) in setOf(
+            STATE_ENCRYPTED_READY,
+            STATE_ENCRYPTED_COMMITTED,
+        )) { "Encrypted database has not completed migration" }
+
+        verifyEncryptedFile()
+        check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_COMMITTED).commit()) {
+            "Unable to persist encrypted database state"
+        }
+
+        // Deletion happens only after the encrypted Room instance has opened successfully.
+        // Failure to delete the source must not stop the application from using encrypted data.
+        if (sourceFile.exists() && !sourceFile.delete()) {
+            preferences.edit().putBoolean(PLAINTEXT_CLEANUP_PENDING, true).apply()
+        } else {
+            preferences.edit().remove(PLAINTEXT_CLEANUP_PENDING).apply()
+            deleteSqliteSidecars(sourceFile)
+        }
+    }
+
+    private fun encryptIfNeeded() {
+        if (!sourceFile.exists()) {
+            // First install: Room will create the database directly on the encrypted path.
+            check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
+                "Unable to persist initial encrypted database state"
+            }
+            return
+        }
+
+        check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTING).commit()) {
+            "Unable to persist migration start state"
+        }
+        migratePlaintextToEncrypted()
+    }
+
+    private fun recoverInterruptedMigration() {
+        // Keep the plaintext source. A valid final file can be recovered; partial temporary
+        // files are disposable only while the plaintext source remains available.
+        if (encryptedFile.exists() && canOpenEncrypted(encryptedFile)) {
+            check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
+                "Unable to persist recovered encrypted database state"
+            }
+            return
+        }
+        if (!sourceFile.exists()) {
+            throw IllegalStateException(
+                "Database migration was interrupted and neither a usable encrypted file nor the plaintext source exists",
+            )
+        }
+        temporaryFile.delete()
+        encryptedFile.delete()
+        migratePlaintextToEncrypted()
+    }
+
+    private fun migratePlaintextToEncrypted() {
+        check(sourceFile.exists()) { "The plaintext database is missing" }
+        temporaryFile.delete()
+        encryptedFile.delete()
+        val key = keyManager.getOrCreateDatabaseKey()
+        try {
+            val source = PlatformSQLiteDatabase.openDatabase(
+                sourceFile.absolutePath,
+                null,
+                PlatformSQLiteDatabase.OPEN_READONLY,
+            )
+            try {
+                source.rawQuery("PRAGMA quick_check", null).use { cursor ->
+                    check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
+                        "Plaintext database integrity check failed"
+                    }
+                }
+                val oldCounts = tableCounts(source)
+
+                // SQLCipher's documented conversion operation is an attached encrypted
+                // database plus sqlcipher_export; rekeying alone does not encrypt plaintext.
+                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
+                try {
+                    val export = destination.rawQuery(
+                        "SELECT sqlcipher_export('main')",
+                        null,
+                    )
+                    export.use { it.moveToFirst() }
+
+                    val newCounts = tableCounts(destination)
+                    check(oldCounts == newCounts) { "Database verification failed after encryption export" }
+                    destination.rawQuery("PRAGMA integrity_check", null).use { cursor ->
+                        check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
+                            "Encrypted database integrity check failed"
+                        }
+                    }
+                } finally {
+                    destination.close()
+                }
+                // Opening it again with the key verifies that the file is not just a plaintext
+                // SQLite database renamed with an encrypted extension.
+                check(canOpenEncrypted(temporaryFile, key)) { "Encrypted database verification failed" }
+            } finally {
+                source.close()
+            }
+
+            if (encryptedFile.exists() && !encryptedFile.delete()) {
+                throw IOException("Unable to replace stale encrypted database file")
+            }
+            check(temporaryFile.renameTo(encryptedFile)) {
+                "Unable to atomically promote encrypted database file"
+            }
+            check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
+                "Unable to persist successful encryption migration state"
+            }
+        } catch (exception: Exception) {
+            // Do not remove the plaintext source. Remove unverified outputs so next launch can
+            // retry, but leave STATE_ENCRYPTING as the recoverable marker.
+            temporaryFile.delete()
+            if (encryptedFile.exists() && !canOpenEncrypted(encryptedFile, key)) {
+                encryptedFile.delete()
+            }
+            throw IllegalStateException("Could not encrypt the existing database; plaintext data was retained", exception)
+        } finally {
+            key.fill(0)
+        }
+    }
+
+    private fun verifyEncryptedFile() {
+        check(encryptedFile.exists() && canOpenEncrypted(encryptedFile)) {
+            "Encrypted database is missing or cannot be opened with the stored key"
+        }
+    }
+
+    private fun canOpenEncrypted(file: File, keyOverride: ByteArray? = null): Boolean = try {
+        if (!file.exists()) return false
+        val key = keyOverride ?: keyManager.getOrCreateDatabaseKey()
+        val helper = SQLCipherMigrationHelper(appContext, file, key)
+        helper.writableDatabase.use { database ->
+            database.rawQuery("PRAGMA cipher_integrity_check", null).use { cursor ->
+                cursor.moveToFirst()
+            }
+            database.rawQuery("SELECT count(*) FROM sqlite_master", null).use { cursor ->
+                cursor.moveToFirst()
+            }
+        }
+        true
+    } catch (_: Exception) {
+        false
+    }
+
+    private fun tableCounts(database: PlatformSQLiteDatabase): Map<String, Long> {
+        val tables = linkedMapOf<String, Long>()
+        database.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val table = cursor.getString(0)
+                database.rawQuery("SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"", null).use { countCursor ->
+                    check(countCursor.moveToFirst())
+                    tables[table] = countCursor.getLong(0)
+                }
+            }
+        }
+        return tables
+    }
+
+    private fun tableCounts(database: net.zetetic.database.sqlcipher.SQLiteDatabase): Map<String, Long> {
+        val tables = linkedMapOf<String, Long>()
+        database.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+            null,
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val table = cursor.getString(0)
+                database.rawQuery("SELECT COUNT(*) FROM \"${table.replace("\"", "\"\"")}\"", null).use { countCursor ->
+                    check(countCursor.moveToFirst())
+                    tables[table] = countCursor.getLong(0)
+                }
+            }
+        }
+        return tables
+    }
+
+    private fun deleteSqliteSidecars(file: File) {
+        File(file.absolutePath + "-wal").delete()
+        File(file.absolutePath + "-shm").delete()
+        File(file.absolutePath + "-journal").delete()
+    }
+
+    private class SQLCipherMigrationHelper(
+        context: Context,
+        file: File,
+        key: ByteArray,
+    ) : SQLiteOpenHelper(context, file.absolutePath, key, null, 1, null, null) {
+        override fun onCreate(database: CipherDatabase) = Unit
+        override fun onUpgrade(database: CipherDatabase, oldVersion: Int, newVersion: Int) = Unit
+    }
+
+    private companion object {
+        const val PLAINTEXT_DATABASE_NAME = "spiralcore.db"
+        const val ENCRYPTED_DATABASE_NAME = "spiralcore.encrypted.db"
+        const val PREFERENCES_NAME = "database_encryption_state"
+        const val STATE_KEY = "state"
+        const val STATE_PLAINTEXT = "plaintext"
+        const val STATE_ENCRYPTING = "encrypting"
+        const val STATE_ENCRYPTED_READY = "encrypted_ready"
+        const val STATE_ENCRYPTED_COMMITTED = "encrypted_committed"
+        const val PLAINTEXT_CLEANUP_PENDING = "plaintext_cleanup_pending"
+    }
+}
