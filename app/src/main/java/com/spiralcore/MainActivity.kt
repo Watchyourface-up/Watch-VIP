@@ -20,6 +20,11 @@ class MainActivity : FragmentActivity() {
     private var credentialSuccess: (() -> Unit)? = null
     private var credentialFailure: ((String) -> Unit)? = null
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Authentication state is intentionally never saved across recreation.
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
