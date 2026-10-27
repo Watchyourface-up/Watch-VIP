@@ -8,6 +8,7 @@ import com.spiralcore.domain.LinkValidation
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -36,9 +37,7 @@ class LinkRepositoryConcurrencyTest {
 
     @Test
     fun concurrentSameUrlInsertHasOneWinnerAndOneDuplicate() = runBlocking {
-        val categoryId = db.linkDao().observeCategories().let { flow ->
-            kotlinx.coroutines.flow.first(flow).first().id
-        }
+        val categoryId = db.linkDao().observeCategories().first().first().id
 
         val results = (1..2).map {
             async {
