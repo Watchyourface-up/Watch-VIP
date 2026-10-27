@@ -105,8 +105,9 @@ internal class DatabaseEncryptionMigrator(
                 null,
                 PlatformSQLiteDatabase.OPEN_READONLY,
             )
-            val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
             try {
+                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
+                try {
                 source.rawQuery("PRAGMA quick_check", null).use { cursor ->
                     check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
                         "Plaintext database integrity check failed"
