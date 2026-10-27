@@ -69,25 +69,46 @@ class DatabaseEncryptionMigrationTest {
     fun encryptedDatabaseCannotBeOpenedWithAnIncorrectKey() {
         val source = context.getDatabasePath("spiralcore.db")
         val encrypted = context.getDatabasePath("spiralcore.encrypted.db")
-        if (!source.exists() && !encrypted.exists()) return
+        source.parentFile?.mkdirs()
+        source.delete()
+        encrypted.delete()
+        context.getDatabasePath("spiralcore.encrypted.db.migrating").delete()
+        context.getSharedPreferences("database_encryption_state", Context.MODE_PRIVATE).edit().clear().commit()
+        context.getSharedPreferences("database_key_metadata", Context.MODE_PRIVATE).edit().clear().commit()
 
+        SQLiteDatabase.openOrCreateDatabase(source, null).use { db ->
+            db.execSQL("CREATE TABLE categories(id INTEGER PRIMARY KEY, name TEXT NOT NULL, position INTEGER NOT NULL)")
+            db.execSQL("CREATE TABLE links(id INTEGER PRIMARY KEY, url TEXT NOT NULL, title TEXT NOT NULL, categoryId INTEGER NOT NULL, createdAt INTEGER NOT NULL, shellSeed INTEGER NOT NULL)")
+            db.execSQL("INSERT INTO categories VALUES(1, 'شخصي', 0)")
+        }
         val manager = DatabaseKeyManager(context)
         DatabaseEncryptionMigrator(context, manager).prepareEncryptedDatabase()
         CipherDatabase.loadLibs(context)
+        val correctKey = manager.getOrCreateDatabaseKey()
         val wrongKey = ByteArray(32) { (it + 1).toByte() }
-        var opened = false
         try {
-            CipherDatabase.openOrCreateDatabase(encrypted, wrongKey, null).use { db ->
+            // First prove the encrypted file opens with its legitimate key.
+            CipherDatabase.openOrCreateDatabase(encrypted, correctKey, null).use { db ->
                 db.rawQuery("SELECT COUNT(*) FROM sqlite_master", null).use { cursor ->
-                    opened = cursor.moveToFirst()
+                    assertTrue(cursor.moveToFirst())
                 }
             }
-        } catch (_: Exception) {
-            opened = false
+
+            var opened = false
+            try {
+                CipherDatabase.openOrCreateDatabase(encrypted, wrongKey, null).use { db ->
+                    db.rawQuery("SELECT COUNT(*) FROM sqlite_master", null).use { cursor ->
+                        opened = cursor.moveToFirst()
+                    }
+                }
+            } catch (_: Exception) {
+                opened = false
+            }
+            assertFalse("Wrong database key must not open the encrypted vault", opened)
         } finally {
+            correctKey.fill(0)
             wrongKey.fill(0)
         }
-        assertFalse("Wrong database key must not open the encrypted vault", opened)
     }
 
     @Test
