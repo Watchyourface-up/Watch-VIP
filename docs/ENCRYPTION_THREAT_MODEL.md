@@ -1,25 +1,28 @@
-# SpiralCore database encryption: threat model and proposal
+# تشفير قاعدة بيانات SpiralCore: نموذج التهديد والتشغيل
 
-## Status
-Proposal only. No encryption code, dependency, key generation, or database migration is implemented by this document. Stop here pending explicit owner approval.
+## الحالة والتنفيذ
+تم اعتماد SQLCipher for Android `4.19.1` مع Room 2.6.1 عبر `SupportOpenHelperFactory`. يُحمّل التطبيق مكتبة SQLCipher قبل فتح الملف، ويستخدم قاعدة منفصلة باسم `spiralcore.encrypted.db`. لا تُخزّن كلمة مرور قاعدة البيانات في المصدر أو في إعدادات نصية صريحة.
 
-## Assets and threats
-The database contains user-saved URLs, titles, categories, and timestamps. Relevant threats are offline extraction of the app's database from a copied device image, a rooted or forensic-accessible device, debugging/instrumentation, and backup or transfer mistakes. An attacker controlling an unlocked device or the running app may still read data; encrypting SQLite does not protect against a compromised process while the database is open. URLs copied/shared by the user are outside database-at-rest protection.
+## الأصول والتهديدات
+تتضمن قاعدة البيانات روابط المستخدم وعناوينها وتصنيفاتها وأوقات حفظها وبذور مظهر القواقع. التهديدات ذات الصلة هي استخراج ملف قاعدة البيانات من نسخة محلية للجهاز، والنسخ الاحتياطي أو النقل غير المقصود، وفحص ملفات التطبيق دون فتحه. التشفير لا يمنع تطبيقًا مخترقًا أو مهاجمًا يسيطر على عملية التطبيق بعد فتح القاعدة من قراءة البيانات. كما لا يضمن حذف ملف SQLite إزالة جميع النسخ الأثرية من ذاكرة Flash.
 
-## Candidate design
-Prefer SQLCipher-compatible Room integration (or another actively maintained SQLite-at-rest encryption solution) only after confirming compatibility with the current Room/SQLite driver versions, Android ABI support, licensing, maintenance cadence, and release artifact size. Do not implement ad hoc page/file encryption. The database passphrase should be random, high entropy, and never hard-coded or derived directly from a user PIN.
+## إدارة المفاتيح
+- يُولّد مفتاح قاعدة بيانات عشوائي بطول 256 بت عند أول تهيئة.
+- يُغلّف المفتاح باستخدام AES-GCM بمفتاح AES مخزّن داخل Android Keystore؛ لا يُحفظ المفتاح الصريح في SharedPreferences، بل تُحفظ بياناته المغلّفة والـIV فقط.
+- إذا فُقد مفتاح Keystore أو تلفت بيانات المفتاح المغلّف، يفشل التطبيق مغلقًا ولا يُنشئ مفتاحًا بديلًا للقاعدة الموجودة؛ قد يتطلب استرداد البيانات نسخة احتياطية موثوقة.
+- تبقى نسخة من مفتاح SQLCipher في الذاكرة ضمن مصنع فتح Room طوال عمر اتصال قاعدة البيانات؛ تُمحى نسخة التهيئة بعد تسليم المفتاح للمصنع. هذا يحد من بقاء النسخ المؤقتة لكنه لا يمنع فحص ذاكرة عملية مروّتة.
 
-## Key management
-Generate a random database key once and protect its wrapping key with Android Keystore. Prefer hardware-backed protection when available while handling devices where it is not. Keep key material out of source control, logs, analytics, clipboard, saved instance state, and ordinary preferences. A Keystore alias is not the secret itself. Define behavior for lock-screen removal, biometric enrollment changes, key invalidation, device migration, and app reinstall before implementation. Because a local-only vault has no server recovery, loss of the wrapping key may mean unrecoverable data; this must be disclosed to users.
+## ترحيل SQLite غير المشفر إلى SQLCipher
+1. يُقرأ ملف `spiralcore.db` في وضع القراءة فقط وتُفحص سلامته بـ`PRAGMA quick_check`، مع حفظ تعداد السجلات لكل جدول وقراءة `user_version`.
+2. يُصدّر المخطط والبيانات إلى ملف منفصل مؤقت باستخدام `ATTACH DATABASE` و`sqlcipher_export`، مع مفتاح SQLCipher.
+3. تُقارن أعداد الصفوف، وتُفحص سلامة الملف المشفر، ثم يُعاد فتحه بالمفتاح نفسه قبل ترقيته إلى الملف النهائي.
+4. تُحفظ حالة الترحيل بصورة دائمة كي يتمكن التشغيل التالي من استئناف العملية أو قبول الملف النهائي إذا أمكن التحقق منه. لا يُستبدل ملف مشفر قابل للفتح بصمت.
+5. بعد أن يفتح Room الملف المشفر بنجاح، يطبّق Room ترحيله من الإصدار 1 إلى 2 عند الحاجة، ثم تُحذف قاعدة SQLite القديمة وملفات WAL/SHM/Journal على أفضل وجه. تُسجّل محاولة التنظيف الفاشلة لإعادتها؛ لا يمكن ضمان المحو الجنائي من ذاكرة Flash.
+6. إذا فشل التصدير أو التحقق، تُترك قاعدة المصدر غير المشفرة دون تغيير ويُوقف فتح الخزنة بدل فتح ملف وجهة غير متحقق.
 
-## Migration from plaintext database
-1. Ship only after backup/restore and rollback behavior are specified and tested.
-2. Create a new encrypted database beside the existing plaintext database; never overwrite the source in place.
-3. In a transaction/validated migration flow, copy categories and links, verify row counts and content integrity, and validate indexes/foreign keys.
-4. Close both databases, persist a durable migration marker, then atomically promote the encrypted database where filesystem constraints permit.
-5. Keep a recoverable source until the encrypted copy is validated and the app has safely reopened it. Define secure cleanup and crash-recovery semantics; deletion cannot guarantee forensic erasure on flash storage.
-6. On interruption, reopen either the verified old database or verified new database, never a partial destination. Do not delete plaintext data before successful verification.
-7. Add tests for empty DB, large DB, duplicate legacy URLs, corrupt source, low storage, process death at each phase, key invalidation, and rollback.
-
-## Approval gate
-Before coding, approve the chosen library/integration, key lifecycle and recovery policy, minimum supported Android behavior, migration/cutover strategy, and acceptance tests. Until then, existing SQLite remains unencrypted at the application layer; do not claim forensic resistance.
+## القيود وبوابات الإصدار
+- اختبارات Instrumentation المضافة تغطي تصدير البيانات، رفض المفتاح الخاطئ، الاسترداد من ملف مؤقت جزئي، وفتح Room المشفر وتنظيف الملف القديم. يجب أن تنجح على GitHub Actions قبل الدمج.
+- لا يُدّعى اختبار جهاز حقيقي؛ اختبر الترحيل على أجهزة Android فعلية مع قاعدة تحتوي بيانات قبل النشر.
+- وثائق حذف المصدر لا تعني ضمان محو كل أثر على وسائط التخزين.
+- عند فشل التنظيف أو فساد المفتاح يجب الاحتفاظ بأدلة تشخيصية غير حساسة وعدم تسجيل الروابط أو المفاتيح أو بيانات المستخدم.
+- يجب تحديد سياسة نسخ احتياطي واستعادة للمستخدم قبل الإصدار، لأن مفتاح Keystore محلي ولا ينتقل تلقائيًا إلى جهاز آخر.
