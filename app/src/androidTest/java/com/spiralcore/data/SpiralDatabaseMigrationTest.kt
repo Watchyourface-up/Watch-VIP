@@ -23,7 +23,7 @@ class SpiralDatabaseMigrationTest {
     @Test
     fun migrationDeduplicatesAndPreservesEarliestTimestamp() {
         helper.createDatabase(dbName, 1).apply {
-            execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'Personal', 0)")
+            execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'شخصي', 0)")
             execSQL(
                 "INSERT INTO links(id, url, title, categoryId, createdAt, shellSeed) " +
                     "VALUES (1, 'https://example.com/', 'example.com', 1, 300, 11)",
@@ -48,7 +48,7 @@ class SpiralDatabaseMigrationTest {
     @Test
     fun migrationWorksWithEmptyLinksTable() {
         helper.createDatabase(dbName, 1).apply {
-            execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'Personal', 0)")
+            execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'شخصي', 0)")
             close()
         }
 
