@@ -2,11 +2,11 @@
     <style name="Theme.SpiralCore" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F5F1E8</item>
-        <item name="android:navigationBarColor">#F5F1E8</item>
+        <item name="android:statusBarColor">#FFFFFF</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar">true</item>
         <item name="android:windowActionModeOverlay">true</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:colorAccent">#23695C</item>
+        <item name="android:colorAccent">#E65100</item>
     </style>
 </resources>
