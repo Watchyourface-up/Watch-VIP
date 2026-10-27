@@ -380,10 +380,17 @@ fun LibraryScreen() {
             text = { Text("سيُحذف الرابط من هذه المكتبة نهائيًا.") },
             confirmButton = {
                 TextButton(onClick = {
-                    coroutineScope.launch { repository.deleteLink(item.link.id) }
-                    pendingDelete = null
-                    message = "تم حذف الرابط."
-                    messageIsError = false
+                    coroutineScope.launch {
+                        try {
+                            repository.deleteLink(item.link.id)
+                            pendingDelete = null
+                            message = "تم حذف الرابط."
+                            messageIsError = false
+                        } catch (_: Exception) {
+                            message = "تعذر حذف الرابط. حاول مرة أخرى."
+                            messageIsError = true
+                        }
+                    }
                 }) { Text("حذف", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
