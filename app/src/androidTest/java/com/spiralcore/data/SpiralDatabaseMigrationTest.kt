@@ -46,12 +46,12 @@ class SpiralDatabaseMigrationTest {
 
     @Test
     fun migrationWorksWithEmptyLinksTable() {
-        helper.createDatabase("migration-duplicate-test", 1).apply {
+        helper.createDatabase("migration-empty-test", 1).apply {
             execSQL("INSERT INTO categories(id, name, position) VALUES (1, 'شخصي', 0)")
             close()
         }
 
-        val db = helper.runMigrationsAndValidate("migration-duplicate-test", 2, true, SpiralDatabase.MIGRATION_1_2)
+        val db = helper.runMigrationsAndValidate("migration-empty-test", 2, true, SpiralDatabase.MIGRATION_1_2)
         db.query("SELECT COUNT(*) FROM links").use { cursor ->
             cursor.moveToFirst()
             assertEquals(0, cursor.getInt(0))
