@@ -49,9 +49,13 @@ jobs:
         run: |
           set -euo pipefail
           GITLEAKS_VERSION="8.24.3"
-          curl --fail --silent --show-error --location             "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"             --output /tmp/gitleaks.tar.gz
+          curl --fail --silent --show-error --location "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" --output /tmp/gitleaks.tar.gz
           tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
-          /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            /tmp/gitleaks detect --source . --log-opts="${GITHUB_EVENT_PULL_REQUEST_BASE_SHA}..${GITHUB_SHA}" --redact --no-banner --exit-code 1
+          else
+            /tmp/gitleaks detect --source . --redact --no-banner --exit-code 1
+          fi
 
   dependency-audit:
     runs-on: ubuntu-24.04
