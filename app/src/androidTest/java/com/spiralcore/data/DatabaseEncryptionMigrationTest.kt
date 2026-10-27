@@ -140,4 +140,41 @@ class DatabaseEncryptionMigrationTest {
         assertTrue("Encrypted output must be fully verified", encrypted.exists())
         assertEquals("encrypted_ready", preferences.getString("state", null))
     }
+
+    @Test
+    fun roomOpensEncryptedDatabaseAndRemovesPlaintextSourceAfterVerification() {
+        val source = context.getDatabasePath("spiralcore.db")
+        val encrypted = context.getDatabasePath("spiralcore.encrypted.db")
+        val temp = File(encrypted.parentFile, "${encrypted.name}.migrating")
+        source.parentFile?.mkdirs()
+        source.delete()
+        encrypted.delete()
+        temp.delete()
+        context.getSharedPreferences("database_encryption_state", Context.MODE_PRIVATE).edit().clear().commit()
+        context.getSharedPreferences("database_key_metadata", Context.MODE_PRIVATE).edit().clear().commit()
+
+        SQLiteDatabase.openOrCreateDatabase(source, null).use { db ->
+            db.execSQL("CREATE TABLE categories(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT NOT NULL, position INTEGER NOT NULL)")
+            db.execSQL("CREATE TABLE links(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, url TEXT NOT NULL, title TEXT NOT NULL, categoryId INTEGER NOT NULL, createdAt INTEGER NOT NULL, shellSeed INTEGER NOT NULL, FOREIGN KEY(categoryId) REFERENCES categories(id) ON UPDATE NO ACTION ON DELETE RESTRICT)")
+            db.execSQL("CREATE INDEX index_links_categoryId ON links(categoryId)")
+            db.execSQL("CREATE UNIQUE INDEX index_links_shellSeed ON links(shellSeed)")
+            db.execSQL("CREATE UNIQUE INDEX index_links_url ON links(url)")
+            db.execSQL("INSERT INTO categories(id, name, position) VALUES(1, 'شخصي', 0)")
+            db.execSQL("INSERT INTO links(id, url, title, categoryId, createdAt, shellSeed) VALUES(1, 'https://secure.example/', 'secure.example', 1, 120, 42)")
+            db.execSQL("PRAGMA user_version = 2")
+        }
+
+        val database = SpiralDatabase.getInstance(context)
+        try {
+            database.openHelper.writableDatabase.query("SELECT COUNT(*) FROM links").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+            assertFalse("Plaintext database should be removed after encrypted Room open", source.exists())
+            assertTrue("Encrypted Room database should remain", encrypted.exists())
+        } finally {
+            database.close()
+        }
+    }
+
 }
