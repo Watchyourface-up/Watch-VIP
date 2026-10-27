@@ -37,8 +37,10 @@ abstract class SpiralDatabase : RoomDatabase() {
             val migrator = DatabaseEncryptionMigrator(context, keyManager)
             migrator.prepareEncryptedDatabase()
             val key = keyManager.getOrCreateDatabaseKey()
+            // SQLCipher for Android 4.x loads the native library through loadLibs on
+            // the legacy API; sqlcipher-android 4.19 exposes System.loadLibrary instead.
+            CipherDatabase.loadLibs(context)
             try {
-                CipherDatabase.loadLibs(context)
                 val database = Room.databaseBuilder(
                     context,
                     SpiralDatabase::class.java,
