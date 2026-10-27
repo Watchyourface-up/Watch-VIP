@@ -105,6 +105,7 @@ internal class DatabaseEncryptionMigrator(
                 null,
                 PlatformSQLiteDatabase.OPEN_READONLY,
             )
+            val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
             try {
                 source.rawQuery("PRAGMA quick_check", null).use { cursor ->
                     check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
@@ -112,7 +113,6 @@ internal class DatabaseEncryptionMigrator(
                     }
                 }
                 val oldCounts = tableCounts(source)
-                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
 
                 // Attach the plaintext database to SQLCipher, then export the attached source
                 // into the encrypted main database.
