@@ -26,7 +26,6 @@ internal class DatabaseEncryptionMigrator(
 
     @Synchronized
     fun prepareEncryptedDatabase() {
-        CipherDatabase.loadLibs(appContext)
         when (preferences.getString(STATE_KEY, STATE_PLAINTEXT)) {
             STATE_ENCRYPTED_READY, STATE_ENCRYPTED_COMMITTED -> {
                 verifyEncryptedFile()
@@ -215,26 +214,31 @@ internal class DatabaseEncryptionMigrator(
         }
     }
 
-    private fun canOpenEncrypted(file: File, keyOverride: ByteArray? = null): Boolean = try {
+    private fun canOpenEncrypted(file: File, keyOverride: ByteArray? = null): Boolean {
         if (!file.exists()) return false
         val key = keyOverride ?: keyManager.getOrCreateDatabaseKey()
-        val helper = SQLCipherMigrationHelper(appContext, file, key)
-        helper.writableDatabase.use { database ->
-            database.rawQuery("PRAGMA cipher_integrity_check", null).use { cursor ->
-                check(cursor.moveToFirst())
-                do {
-                    check(cursor.getString(0).equals("ok", ignoreCase = true)) {
-                        "Encrypted database integrity check failed"
+        return try {
+            SQLCipherMigrationHelper(appContext, file, key, CURRENT_ROOM_VERSION).use { helper ->
+                helper.writableDatabase.use { database ->
+                    database.rawQuery("PRAGMA cipher_integrity_check", null).use { cursor ->
+                        check(cursor.moveToFirst())
+                        do {
+                            check(cursor.getString(0).equals("ok", ignoreCase = true)) {
+                                "Encrypted database integrity check failed"
+                            }
+                        } while (cursor.moveToNext())
                     }
-                } while (cursor.moveToNext())
+                    database.rawQuery("SELECT count(*) FROM sqlite_master", null).use { cursor ->
+                        check(cursor.moveToFirst()) { "Encrypted database schema is unreadable" }
+                    }
+                }
             }
-            database.rawQuery("SELECT count(*) FROM sqlite_master", null).use { cursor ->
-                check(cursor.moveToFirst()) { "Encrypted database schema is unreadable" }
-            }
+            true
+        } catch (_: Exception) {
+            false
+        } finally {
+            if (keyOverride == null) key.fill(0)
         }
-        true
-    } catch (_: Exception) {
-        false
     }
 
     private fun tableCounts(database: PlatformSQLiteDatabase): Map<String, Long> {
