@@ -386,8 +386,11 @@ fun LibraryScreen() {
                             pendingDelete = null
                             message = "تم حذف الرابط."
                             messageIsError = false
+                        } catch (_: kotlinx.coroutines.CancellationException) {
+                            throw kotlinx.coroutines.CancellationException()
                         } catch (_: Exception) {
-                            message = "تعذر حذف الرابط. حاول مرة أخرى."
+                            pendingDelete = null
+                            message = "تعذر حذف الرابط. لم يتغير محتوى المكتبة."
                             messageIsError = true
                         }
                     }
