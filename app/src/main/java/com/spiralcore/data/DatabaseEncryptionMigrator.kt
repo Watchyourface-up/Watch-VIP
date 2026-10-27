@@ -62,7 +62,7 @@ internal class DatabaseEncryptionMigrator(
 
     private fun encryptIfNeeded() {
         if (!sourceFile.exists()) {
-            // First install: Room will create the database directly on the encrypted path.
+            // First install: no plaintext database exists, so Room may create a fresh encrypted DB.
             check(preferences.edit().putString(STATE_KEY, STATE_ENCRYPTED_READY).commit()) {
                 "Unable to persist initial encrypted database state"
             }
