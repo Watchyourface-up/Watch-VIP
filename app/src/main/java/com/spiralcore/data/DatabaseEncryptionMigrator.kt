@@ -100,30 +100,37 @@ internal class DatabaseEncryptionMigrator(
         encryptedFile.delete()
         val key = keyManager.getOrCreateDatabaseKey()
         try {
-            val source = PlatformSQLiteDatabase.openDatabase(
+            val oldCounts: Map<String, Long>
+            PlatformSQLiteDatabase.openDatabase(
                 sourceFile.absolutePath,
                 null,
                 PlatformSQLiteDatabase.OPEN_READONLY,
-            )
-            try {
-                val destination = SQLCipherMigrationHelper(appContext, temporaryFile, key).writableDatabase
-                try {
+            ).use { source ->
                 source.rawQuery("PRAGMA quick_check", null).use { cursor ->
                     check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
                         "Plaintext database integrity check failed"
                     }
                 }
-                val oldCounts = tableCounts(source)
+                oldCounts = tableCounts(source)
+            }
 
-                // Attach the plaintext database to SQLCipher, then export the attached source
-                // into the encrypted main database.
+            SQLCipherMigrationHelper(appContext, temporaryFile, key).use { helper ->
+                val destination = helper.writableDatabase
                 try {
-                    destination.execSQL("ATTACH DATABASE ? AS plaintext KEY ''", arrayOf(sourceFile.absolutePath))
-                    destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use { it.moveToFirst() }
+                    // SQLCipher's documented plaintext conversion path is ATTACH + sqlcipher_export.
+                    destination.execSQL(
+                        "ATTACH DATABASE ? AS plaintext KEY ''",
+                        arrayOf(sourceFile.absolutePath),
+                    )
+                    destination.rawQuery("SELECT sqlcipher_export('main', 'plaintext')", null).use {
+                        check(it.moveToFirst()) { "SQLCipher export did not return a result" }
+                    }
                     destination.execSQL("DETACH DATABASE plaintext")
 
                     val newCounts = tableCounts(destination)
-                    check(oldCounts == newCounts) { "Database verification failed after encryption export" }
+                    check(oldCounts == newCounts) {
+                        "Database verification failed after encryption export"
+                    }
                     destination.rawQuery("PRAGMA integrity_check", null).use { cursor ->
                         check(cursor.moveToFirst() && cursor.getString(0) == "ok") {
                             "Encrypted database integrity check failed"
@@ -132,16 +139,12 @@ internal class DatabaseEncryptionMigrator(
                 } finally {
                     destination.close()
                 }
-                // Opening it again with the key verifies that the file is not just a plaintext
-                // SQLite database renamed with an encrypted extension.
-                check(canOpenEncrypted(temporaryFile, key)) { "Encrypted database verification failed" }
-            } finally {
-                source.close()
             }
 
-            if (encryptedFile.exists() && !encryptedFile.delete()) {
-                throw IOException("Unable to replace stale encrypted database file")
+            check(canOpenEncrypted(temporaryFile, key)) {
+                "Encrypted database verification failed"
             }
+
             check(temporaryFile.renameTo(encryptedFile)) {
                 "Unable to atomically promote encrypted database file"
             }
@@ -149,13 +152,15 @@ internal class DatabaseEncryptionMigrator(
                 "Unable to persist successful encryption migration state"
             }
         } catch (exception: Exception) {
-            // Do not remove the plaintext source. Remove unverified outputs so next launch can
-            // retry, but leave STATE_ENCRYPTING as the recoverable marker.
+            // Keep the original database untouched. A partial destination is safe to discard.
             temporaryFile.delete()
             if (encryptedFile.exists() && !canOpenEncrypted(encryptedFile, key)) {
                 encryptedFile.delete()
             }
-            throw IllegalStateException("Could not encrypt the existing database; plaintext data was retained", exception)
+            throw IllegalStateException(
+                "Could not encrypt the existing database; plaintext data was retained",
+                exception,
+            )
         } finally {
             key.fill(0)
         }
